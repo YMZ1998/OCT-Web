@@ -43,6 +43,12 @@ func (s *UserService) Login(username, password string) (string, error) {
 	if err != nil || !utils.CheckPasswordHash(password, user.Password) {
 		return "", err
 	}
+
+	now := time.Now().Unix()
+	if err := s.Repo.UpdateLastLoginAt(user.ID, now); err != nil {
+		return "", err
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  user.ID.Hex(),
 		"exp": time.Now().Add(time.Hour * 72).Unix(),
