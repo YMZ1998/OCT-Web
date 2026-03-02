@@ -1,0 +1,9 @@
+server:
+  port: 8080
+mongo:
+  uri: mongodb://mongo:27017
+  db: oct
+jwt:
+  secret: your_jwt_secret
+log:
+  path: ./logs/app.log
