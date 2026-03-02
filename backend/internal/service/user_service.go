@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log"
 	"oct-backend/internal/model"
 	"oct-backend/internal/repository"
 	"oct-backend/internal/utils"
@@ -43,6 +44,12 @@ func (s *UserService) Login(username, password string) (string, error) {
 	if err != nil || !utils.CheckPasswordHash(password, user.Password) {
 		return "", err
 	}
+
+	now := time.Now().Unix()
+	if err := s.Repo.UpdateLastLoginAt(user.ID, now); err != nil {
+		log.Printf("warn: failed to update last login for user %s: %v", user.ID.Hex(), err)
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  user.ID.Hex(),
 		"exp": time.Now().Add(time.Hour * 72).Unix(),
