@@ -51,3 +51,12 @@ func (r *UserRepository) Delete(id string) error {
 	_, err := r.Coll.DeleteOne(context.Background(), bson.M{"_id": id})
 	return err
 }
+
+func (r *UserRepository) UpdateLastLoginAt(id primitive.ObjectID, ts int64) error {
+	_, err := r.Coll.UpdateOne(
+		context.Background(),
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{"last_login_at": ts}},
+	)
+	return err
+}

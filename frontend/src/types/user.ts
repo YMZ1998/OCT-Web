@@ -4,5 +4,6 @@ export interface User {
   email: string;
   gender?: string;
   age?: number;
-  createdAt?: number;
+  created_at?: number;
+  last_login_at?: number;
 }

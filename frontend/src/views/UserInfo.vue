@@ -10,7 +10,8 @@
           <li><span class="label">邮箱：</span>{{ user?.email || '未填写' }}</li>
           <li><span class="label">性别：</span>{{ user?.gender === 'male' ? '男' : user?.gender === 'female' ? '女' : (user?.gender || '未填写') }}</li>
           <li><span class="label">年龄：</span>{{ user?.age ?? '未填写' }}</li>
-          <li><span class="label">注册时间：</span>{{ user?.createdAt ? formatDate(user.createdAt) : '未填写' }}</li>
+          <li><span class="label">注册时间：</span>{{ user?.created_at ? formatDate(user.created_at) : '未填写' }}</li>
+          <li><span class="label">最近登录：</span>{{ user?.last_login_at ? formatDateTime(user.last_login_at) : '首次登录' }}</li>
         </ul>
       </div>
       <div class="actions">
@@ -35,6 +36,11 @@ const user = ref<User | null>(null);
 function formatDate(ts: number) {
   const d = new Date(ts * 1000);
   return d.toLocaleDateString();
+}
+
+function formatDateTime(ts: number) {
+  const d = new Date(ts * 1000);
+  return d.toLocaleString();
 }
 
 onMounted(async () => {
