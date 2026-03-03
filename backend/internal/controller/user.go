@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"oct-backend/internal/model"
 	"oct-backend/internal/response"
 	"oct-backend/internal/service"
 
@@ -84,6 +85,30 @@ func (ctl *UserController) UpdateUser(c *gin.Context) {
 	user, err := ctl.Service.UpdateUserByID(id, req.Email, req.Gender, req.Age)
 	if err != nil {
 		response.JSON(c, 500, "更新失败", nil)
+		return
+	}
+
+	response.JSON(c, 0, "更新成功", user)
+}
+
+func (ctl *UserController) UpdateUserProjects(c *gin.Context) {
+	id := c.Param("id")
+	if authID, ok := c.Get("userID"); !ok || authID != id {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "无权限修改该用户项目数据"})
+		return
+	}
+
+	var req struct {
+		ProjectState model.ProjectState `json:"project_state"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, 400, "参数错误", nil)
+		return
+	}
+
+	user, err := ctl.Service.UpdateUserProjectState(id, req.ProjectState)
+	if err != nil {
+		response.JSON(c, 500, "项目数据更新失败", nil)
 		return
 	}
 

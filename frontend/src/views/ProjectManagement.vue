@@ -124,6 +124,7 @@
             <textarea v-model.trim="newProjectForm.desc" rows="3" required placeholder="请输入项目描述"></textarea>
           </label>
           <div class="modal-actions full">
+            <button v-if="editingProjectId" type="button" class="danger" @click="deleteEditingProject">删除项目</button>
             <button type="button" class="ghost" @click="closeCreateModal">取消</button>
             <button type="submit" class="primary">{{ editingProjectId ? '保存修改' : '创建项目' }}</button>
           </div>
@@ -154,8 +155,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { getUser } from '../api/user';
-import { useProjectStore, type ProjectItem, type TodoItem } from '../store/project';
+import { getUser, updateUserProjects } from '../api/user';
+import { useProjectStore, type ProjectItem, type ProjectStateData, type TodoItem } from '../store/project';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
 
@@ -197,6 +198,34 @@ const newProjectForm = ref({
   desc: '',
 });
 
+
+async function syncProjectsToServer() {
+  if (!userStore.token) return;
+  const userId = String(user.value?.id || route.params.id || userStore.userInfo?.id || '');
+  if (!userId) return;
+
+  const payload: ProjectStateData = {
+    recentProjects: projectStore.recentProjects,
+    todoItems: projectStore.todoItems,
+    nextProjectId: projectStore.nextProjectId,
+  };
+
+  try {
+    await updateUserProjects(userId, payload, userStore.token);
+  } catch {
+    // 后端同步失败时保留前端状态，避免阻塞用户操作
+  }
+}
+
+
+function hasServerProjectState(state: any) {
+  if (!state || typeof state !== 'object') return false;
+  const hasProjects = Array.isArray(state.recentProjects);
+  const hasTodos = Array.isArray(state.todoItems);
+  const hasNextId = Number(state.nextProjectId || 0) > 0;
+  return hasProjects || hasTodos || hasNextId;
+}
+
 function resetNewProjectForm() {
   editingProjectId.value = null;
   newProjectForm.value = {
@@ -235,16 +264,28 @@ function submitCreateProject() {
   }
 
   closeCreateModal();
+  void syncProjectsToServer();
 }
 
 function handleTask(project: ProjectItem) {
   projectStore.startProjectTasks(project);
+  void syncProjectsToServer();
 }
 
 function completeTask(item: TodoItem) {
   projectStore.completeTask(item.key);
+  void syncProjectsToServer();
 }
 
+
+
+async function deleteEditingProject() {
+  if (!editingProjectId.value) return;
+  projectStore.deleteProject(editingProjectId.value);
+  detailProject.value = null;
+  closeCreateModal();
+  await syncProjectsToServer();
+}
 
 function openEditModal(project: ProjectItem) {
   editingProjectId.value = project.id;
@@ -279,7 +320,18 @@ onMounted(async () => {
     const res = await getUser(route.params.id as string, userStore.token);
     user.value = res.data.data;
     userStore.setUserInfo(res.data.data);
-    projectStore.initForUser(String(res.data.data?.id || route.params.id || 'guest'));
+    const userId = String(res.data.data?.id || route.params.id || 'guest');
+    projectStore.initForUser(userId);
+
+    if (hasServerProjectState(res.data.data?.project_state)) {
+      projectStore.replaceState(res.data.data.project_state);
+    } else {
+      await syncProjectsToServer();
+    }
+
+    if (route.query.action === 'create') {
+      openCreateModal();
+    }
   } catch {
     user.value = null;
   }
@@ -367,6 +419,7 @@ function onLogout() {
 .modal-actions button { border: 1px solid #cad5e4; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 .modal-actions .primary { background: #3f8fdb; border-color: #3f8fdb; color: #fff; }
 .modal-actions .ghost { background: #fff; }
+.modal-actions .danger { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; margin-right: auto; }
 .detail-grid {
   display: grid;
   grid-template-columns: 110px 1fr;

@@ -25,3 +25,9 @@ export function deleteUser(id: string, token: string) {
     headers: { Authorization: `Bearer ${token}` }
   });
 }
+
+export function updateUserProjects(id: string, projectState: any, token: string) {
+  return axios.put(`/api/v1/user/${id}/projects`, { project_state: projectState }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
