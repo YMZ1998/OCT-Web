@@ -29,7 +29,7 @@
 
       <section class="banner">
         <p>今天是 {{ today }}，您有 <strong>{{ pendingCount }}</strong> 项待处理任务</p>
-        <button>+ 新建任务</button>
+        <button @click="openTaskModal">+ 新建任务</button>
       </section>
 
       <section class="section-head">
@@ -77,11 +77,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>儿童眼底病变星筛查项目</td>
-              <td>{{ user?.email || 'xxxxxxx' }}</td>
-              <td>{{ user?.created_at ? formatDate(user.created_at) : '2023-06-10' }}</td>
-              <td><a href="#" @click.prevent>查看</a></td>
+            <tr v-for="item in recentTasks" :key="item.key">
+              <td>{{ item.projectName }}</td>
+              <td>{{ projectCenterMap[item.projectId] || '-' }}</td>
+              <td>{{ taskTimeText(item.key) }}</td>
+              <td>{{ item.taskName }}</td>
+            </tr>
+            <tr v-if="!recentTasks.length">
+              <td colspan="4">暂无近期任务</td>
             </tr>
           </tbody>
         </table>
@@ -103,6 +106,27 @@
         </div>
         <p v-if="message" class="message">{{ message }}</p>
       </section>
+
+      <div v-if="showTaskModal" class="modal-mask" @click.self="closeTaskModal">
+        <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-title">
+          <h3 id="task-title">新建任务</h3>
+          <form class="task-form" @submit.prevent="submitTask">
+            <label>选择项目
+              <select v-model.number="newTask.projectId" required>
+                <option :value="0" disabled>请选择项目</option>
+                <option v-for="project in projectStore.recentProjects" :key="project.id" :value="project.id">{{ project.name }}</option>
+              </select>
+            </label>
+            <label>任务名称
+              <input v-model.trim="newTask.taskName" placeholder="请输入任务名称" required />
+            </label>
+            <div class="task-actions">
+              <button type="button" @click="closeTaskModal">取消</button>
+              <button type="submit" class="primary">创建任务</button>
+            </div>
+          </form>
+        </section>
+      </div>
 
       <footer class="page-footer">
         <span>SJTURC眼科在吸纳工作管理系统</span>
@@ -128,6 +152,8 @@ const user = ref<User | null>(null);
 const saving = ref(false);
 const message = ref('');
 const form = ref({ email: '', gender: '', age: undefined as number | undefined });
+const showTaskModal = ref(false);
+const newTask = ref({ projectId: 0, taskName: '' });
 
 const taskStats = computed(() => {
   const todos = projectStore.todoItems;
@@ -155,7 +181,21 @@ const taskStats = computed(() => {
 });
 
 const pendingCount = computed(() => projectStore.pendingCount);
+const recentTasks = computed(() => projectStore.todoItems.slice(0, 8));
+const projectCenterMap = computed(() =>
+  projectStore.recentProjects.reduce((acc, item) => {
+    acc[item.id] = item.center;
+    return acc;
+  }, {} as Record<number, string>),
+);
 const today = computed(() => new Date().toLocaleDateString('zh-CN'));
+
+function taskTimeText(key: string) {
+  const [idText] = key.split('-');
+  const id = Number(idText);
+  const project = projectStore.recentProjects.find((item) => item.id === id);
+  return project?.date || today.value;
+}
 
 function formatDate(ts: number) {
   return new Date(ts * 1000).toLocaleDateString();
@@ -165,6 +205,28 @@ function fillFormFromUser() {
   form.value.email = user.value?.email || '';
   form.value.gender = user.value?.gender || '';
   form.value.age = user.value?.age;
+}
+
+
+function openTaskModal() {
+  showTaskModal.value = true;
+  newTask.value = {
+    projectId: projectStore.recentProjects[0]?.id || 0,
+    taskName: '',
+  };
+}
+
+function closeTaskModal() {
+  showTaskModal.value = false;
+  newTask.value = { projectId: 0, taskName: '' };
+}
+
+function submitTask() {
+  const project = projectStore.recentProjects.find((item) => item.id === newTask.value.projectId);
+  if (!project) return;
+
+  projectStore.addTask(project, newTask.value.taskName);
+  closeTaskModal();
 }
 
 onMounted(async () => {
@@ -263,6 +325,30 @@ th, td { padding: 12px; border-bottom: 1px solid #edf0f5; text-align: center; }
 .profile-form button { background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 9px 12px; cursor: pointer; }
 .message { margin: 10px 0 0; color: #2563eb; }
 .page-footer { margin-top: 14px; background: #fff; border: 1px solid #d5dbe5; border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; }
+
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+.modal-card {
+  width: min(520px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  padding: 16px;
+}
+.modal-card h3 { margin: 0 0 12px; }
+.task-form { display: grid; gap: 10px; }
+.task-form label { display: grid; gap: 6px; font-size: 14px; }
+.task-form input, .task-form select { border: 1px solid #cfd8e3; border-radius: 8px; padding: 8px 10px; }
+.task-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.task-actions button { border: 1px solid #cad5e4; border-radius: 8px; padding: 8px 14px; cursor: pointer; background: #fff; }
+.task-actions .primary { background: #3f8fdb; border-color: #3f8fdb; color: #fff; }
 
 @media (max-width: 1100px) {
   .dashboard-page { flex-direction: column; }

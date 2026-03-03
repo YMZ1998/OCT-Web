@@ -50,6 +50,7 @@
               <span>📅 {{ project.date }}</span>
               <span>👥 {{ project.members }}人参与</span>
               <button @click="openDetailModal(project)">查看详情</button>
+              <button @click="openEditModal(project)">编辑项目</button>
               <button class="primary" @click="handleTask(project)">处理任务</button>
             </footer>
           </article>
@@ -73,7 +74,7 @@
 
     <div v-if="showCreateModal" class="modal-mask" @click.self="closeCreateModal">
       <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="create-title">
-        <h3 id="create-title">新建项目</h3>
+        <h3 id="create-title">{{ editingProjectId ? '编辑项目' : '新建项目' }}</h3>
         <form class="form-grid" @submit.prevent="submitCreateProject">
           <label>
             项目名称
@@ -97,7 +98,7 @@
           </label>
           <label>
             初始待处理任务
-            <input v-model.trim="newProjectForm.taskName" placeholder="如：认证" required />
+            <input v-model.trim="newProjectForm.taskName" placeholder="如：认证" :required="!editingProjectId" />
           </label>
           <label class="full">
             项目描述
@@ -105,7 +106,7 @@
           </label>
           <div class="modal-actions full">
             <button type="button" class="ghost" @click="closeCreateModal">取消</button>
-            <button type="submit" class="primary">创建项目</button>
+            <button type="submit" class="primary">{{ editingProjectId ? '保存修改' : '创建项目' }}</button>
           </div>
         </form>
       </section>
@@ -147,6 +148,7 @@ const user = ref<User | null>(null);
 
 const showCreateModal = ref(false);
 const detailProject = ref<ProjectItem | null>(null);
+const editingProjectId = ref<number | null>(null);
 
 const recentProjects = computed(() => projectStore.recentProjects);
 const todoItems = computed(() => projectStore.todoItems);
@@ -164,6 +166,7 @@ const newProjectForm = ref({
 });
 
 function resetNewProjectForm() {
+  editingProjectId.value = null;
   newProjectForm.value = {
     name: '',
     owner: '',
@@ -185,17 +188,20 @@ function closeCreateModal() {
 }
 
 function submitCreateProject() {
-  projectStore.addProject(
-    {
-      name: newProjectForm.value.name,
-      owner: newProjectForm.value.owner,
-      center: newProjectForm.value.center,
-      desc: newProjectForm.value.desc,
-      date: newProjectForm.value.date,
-      members: newProjectForm.value.members,
-    },
-    newProjectForm.value.taskName,
-  );
+  const payload = {
+    name: newProjectForm.value.name,
+    owner: newProjectForm.value.owner,
+    center: newProjectForm.value.center,
+    desc: newProjectForm.value.desc,
+    date: newProjectForm.value.date,
+    members: newProjectForm.value.members,
+  };
+
+  if (editingProjectId.value) {
+    projectStore.updateProject(editingProjectId.value, payload);
+  } else {
+    projectStore.addProject(payload, newProjectForm.value.taskName);
+  }
 
   closeCreateModal();
 }
@@ -203,6 +209,21 @@ function submitCreateProject() {
 function handleTask(project: ProjectItem) {
   const taskName = `${project.name} - 任务处理`;
   projectStore.addTask(project, taskName, `${project.id}-default-task`);
+}
+
+
+function openEditModal(project: ProjectItem) {
+  editingProjectId.value = project.id;
+  newProjectForm.value = {
+    name: project.name,
+    owner: project.owner,
+    center: project.center,
+    date: project.date,
+    members: project.members,
+    taskName: '',
+    desc: project.desc,
+  };
+  showCreateModal.value = true;
 }
 
 function openDetailModal(project: ProjectItem) {
@@ -263,7 +284,7 @@ function onLogout() {
 .state { padding: 4px 14px; border-radius: 999px; color: #fff; font-size: 14px; }
 .state.running { background: #3b82f6; }
 .state.pending { background: #f59e0b; }
-.project-card footer { display: grid; grid-template-columns: auto auto 1fr auto auto; gap: 10px; align-items: center; color: #6b7280; }
+.project-card footer { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 10px; align-items: center; color: #6b7280; }
 .project-card footer button { justify-self: end; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 .project-card footer button.primary { background: #dbe7ff; color: #1f3b8f; border-color: #c8d7ff; }
 .todo-panel ul { list-style: none; margin: 0; padding: 12px; display: grid; gap: 10px; }

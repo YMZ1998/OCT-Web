@@ -115,6 +115,35 @@ export const useProjectStore = defineStore('project', {
       this.nextProjectId += 1;
       this.persist();
     },
+
+    updateProject(projectId: number, payload: Omit<ProjectItem, 'id' | 'state' | 'stateClass'>) {
+      const idx = this.recentProjects.findIndex((item) => item.id === projectId);
+      if (idx < 0) return;
+
+      const current = this.recentProjects[idx];
+      const updated: ProjectItem = {
+        ...current,
+        name: payload.name,
+        owner: payload.owner,
+        center: payload.center,
+        desc: payload.desc,
+        date: payload.date,
+        members: payload.members,
+      };
+      this.recentProjects.splice(idx, 1, updated);
+
+      this.todoItems = this.todoItems.map((todo) =>
+        todo.projectId === projectId
+          ? {
+              ...todo,
+              projectName: updated.name,
+            }
+          : todo,
+      );
+
+      this.persist();
+    },
+
     addTask(project: ProjectItem, taskName: string, dedupeKey?: string) {
       const key = dedupeKey || `${project.id}-${taskName}`;
       if (this.todoItems.some((item) => item.key === key)) return;
