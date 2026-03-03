@@ -254,16 +254,17 @@ async function submitCreateProject() {
 
   await syncProjectsToServer();
   closeCreateModal();
+  void syncProjectsToServer();
 }
 
 async function handleTask(project: ProjectItem) {
   projectStore.startProjectTasks(project);
-  await syncProjectsToServer();
+  void syncProjectsToServer();
 }
 
 async function completeTask(item: TodoItem) {
   projectStore.completeTask(item.key);
-  await syncProjectsToServer();
+  void syncProjectsToServer();
 }
 
 
