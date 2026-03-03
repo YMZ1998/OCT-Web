@@ -6,9 +6,11 @@ import (
 	"oct-backend/internal/repository"
 	"oct-backend/internal/utils"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type UserService struct {
@@ -59,4 +61,25 @@ func (s *UserService) Login(username, password string) (string, error) {
 		"exp": time.Now().Add(time.Hour * 72).Unix(),
 	})
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+func (s *UserService) UpdateUserByID(id string, email, gender *string, age *int) (*model.User, error) {
+	update := bson.M{}
+	if email != nil {
+		update["email"] = strings.TrimSpace(*email)
+	}
+	if gender != nil {
+		update["gender"] = strings.TrimSpace(*gender)
+	}
+	if age != nil {
+		update["age"] = *age
+	}
+
+	if len(update) > 0 {
+		if err := s.Repo.Update(id, update); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.Repo.FindByID(id)
 }
