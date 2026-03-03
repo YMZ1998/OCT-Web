@@ -102,7 +102,7 @@ async function onLogin() {
     }
 
     userStore.setToken(data.token);
-    router.push(`/user/${data.id}`);
+    router.push(`/projects/${data.id}`);
   } catch (e: any) {
     error.value = e.response?.data?.msg || '登录失败';
   }
