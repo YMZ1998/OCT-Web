@@ -27,9 +27,18 @@
       </header>
 
       <section class="tabs">
-        <button :class="['tab', stage === 'hardware' ? 'active' : '']">硬件认证</button>
-        <button :class="['tab', stage === 'technician' ? 'active' : '']">技师认证</button>
-        <button :class="['tab', stage === 'certificate' ? 'active' : '']">证书颁发</button>
+        <button :class="['tab', stage === 'hardware' ? 'active' : '']">
+          <span class="tab-icon">🧩</span>
+          <span>硬件认证</span>
+        </button>
+        <button :class="['tab', stage === 'technician' ? 'active' : '']">
+          <span class="tab-icon">👨‍🔧</span>
+          <span>技师认证</span>
+        </button>
+        <button :class="['tab', stage === 'certificate' ? 'active' : '']">
+          <span class="tab-icon">🏅</span>
+          <span>证书颁发</span>
+        </button>
       </section>
 
       <section class="main-grid">
@@ -217,8 +226,28 @@ onMounted(async () => {
 .content { flex: 1; padding: 18px 20px; }
 .topbar { background: #fff; border: 1px solid #d2dae6; border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
 .tabs { margin: 10px 0 14px; display: flex; gap: 10px; border-bottom: 1px solid #d5dbe5; padding-bottom: 10px; }
-.tab { border: none; background: transparent; color: #64748b; padding: 6px 10px; cursor: default; }
-.tab.active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+.tab {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 8px 12px;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid transparent;
+  line-height: 1.2;
+}
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.tab.active { color: #2563eb; border-bottom-color: #2563eb; }
 .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
 .panel { background: #fff; border: 1px solid #d2dae6; border-radius: 8px; padding: 14px; }
 .sub { margin: 12px 0 8px; color: #4b5563; }
