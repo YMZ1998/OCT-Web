@@ -242,6 +242,18 @@ const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
   type: '眼底照片',
 }));
 
+const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
+  id: idx + 1,
+  sample: `样本${String(idx + 1).padStart(3, '0')}`,
+  type: '眼底照片',
+}));
+
+
+const imageTotalPages = computed(() => Math.ceil(imageData.length / pageSize));
+const pagedImages = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return imageData.slice(start, start + pageSize);
+});
 
 const imageTotalPages = computed(() => Math.ceil(imageData.length / pageSize));
 const pagedImages = computed(() => {

@@ -75,16 +75,21 @@
           <header>
             <h3>待处理（{{ pendingCount }}）</h3>
           </header>
-          <ul>
-            <li v-for="item in todoItems" :key="item.key">
-              <div class="todo-title">{{ item.taskName }}</div>
-              <small>{{ item.projectName }}</small>
-              <div class="todo-actions">
-                <button class="todo-action" @click="openCertification(item)">进入处理</button>
-                <button class="todo-done" @click="completeTask(item)">完成任务</button>
-              </div>
-            </li>
-          </ul>
+          <div class="todo-groups" v-if="groupedTodoItems.length">
+            <section class="todo-group" v-for="group in groupedTodoItems" :key="group.projectId">
+              <h4>项目{{ group.projectId }} · {{ group.projectName }}</h4>
+              <ul>
+                <li v-for="item in group.items" :key="item.key">
+                  <div class="todo-title">{{ item.taskName }}</div>
+                  <small>任务标识：{{ item.key }}</small>
+                  <div class="todo-actions">
+                    <button class="todo-action" @click="openCertification(item)">进入处理</button>
+                    <button class="todo-done" @click="completeTask(item)">完成任务</button>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
           <p v-if="!todoItems.length" class="empty">暂无待处理任务</p>
         </div>
       </section>
@@ -168,6 +173,20 @@ const recentProjects = computed(() => projectStore.recentProjects);
 const todoItems = computed(() => projectStore.todoItems);
 const pendingCount = computed(() => projectStore.pendingCount);
 const today = computed(() => new Date().toLocaleDateString('zh-CN'));
+const groupedTodoItems = computed(() => {
+  const map = new Map<number, { projectId: number; projectName: string; items: TodoItem[] }>();
+  todoItems.value.forEach((item) => {
+    if (!map.has(item.projectId)) {
+      map.set(item.projectId, {
+        projectId: item.projectId,
+        projectName: item.projectName,
+        items: [],
+      });
+    }
+    map.get(item.projectId)?.items.push(item);
+  });
+  return Array.from(map.values());
+});
 
 const newProjectForm = ref({
   name: '',
@@ -304,7 +323,10 @@ function onLogout() {
 .project-card footer { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 10px; align-items: center; color: #6b7280; }
 .project-card footer button { justify-self: end; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 .project-card footer button.primary { background: #dbe7ff; color: #1f3b8f; border-color: #c8d7ff; }
-.todo-panel ul { list-style: none; margin: 0; padding: 12px; display: grid; gap: 10px; }
+.todo-groups { padding: 12px; display: grid; gap: 12px; }
+.todo-group { border: 1px dashed #d5deea; border-radius: 8px; padding: 10px; }
+.todo-group h4 { margin: 0 0 8px; color: #334155; font-size: 16px; }
+.todo-panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .todo-panel li { border: 1px solid #dfe5f1; border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
 .todo-title { font-size: 20px; color: #1f2937; }
 .todo-panel li small { color: #64748b; }
