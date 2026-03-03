@@ -36,7 +36,12 @@ async function onLogin() {
     const { code, msg, data } = res.data || {};
 
     if (code !== 0) {
-      error.value = msg === '登录失败' ? '密码错误，请重新输入' : (msg || '登录失败');
+      if (msg === '登录失败') {
+        error.value = '密码错误，请重新输入';
+        window.alert('密码错误，请重新输入');
+      } else {
+        error.value = msg || '登录失败';
+      }
       return;
     }
 

@@ -46,7 +46,7 @@ func (ctl *UserController) Login(c *gin.Context) {
 		return
 	}
 	token, err := ctl.Service.Login(req.Username, req.Password)
-	if err != nil {
+	if err != nil || token == "" {
 		response.JSON(c, 401, "登录失败", nil)
 		return
 	}
