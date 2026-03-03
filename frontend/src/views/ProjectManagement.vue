@@ -135,67 +135,23 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser } from '../api/user';
+import { useProjectStore, type ProjectItem, type TodoItem } from '../store/project';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
-
-type ProjectItem = {
-  id: number;
-  name: string;
-  owner: string;
-  center: string;
-  state: '进行中' | '待开始';
-  stateClass: 'running' | 'pending';
-  desc: string;
-  date: string;
-  members: number;
-};
-
-type TodoItem = {
-  key: string;
-  projectId: number;
-  projectName: string;
-  taskName: string;
-};
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const projectStore = useProjectStore();
 const user = ref<User | null>(null);
 
 const showCreateModal = ref(false);
 const detailProject = ref<ProjectItem | null>(null);
-const nextProjectId = ref(3);
 
-const recentProjects = ref<ProjectItem[]>([
-  {
-    id: 1,
-    name: '青光眼早期诊断研究',
-    owner: '张医生',
-    center: '上海眼科中心',
-    state: '进行中',
-    stateClass: 'running',
-    desc: '研究青光眼早期诊断的新方法和技术',
-    date: '2023-06-15',
-    members: 8,
-  },
-  {
-    id: 2,
-    name: '视网膜病变图像分析',
-    owner: '李医生',
-    center: '虹桥临床中心',
-    state: '待开始',
-    stateClass: 'pending',
-    desc: '构建视网膜病变分级模型并优化阅片流程',
-    date: '2023-07-01',
-    members: 12,
-  },
-]);
-
-const todoItems = ref<TodoItem[]>([
-  { key: '1-认证', projectId: 1, projectName: '青光眼早期诊断研究', taskName: '认证' },
-  { key: '1-分发影像数据', projectId: 1, projectName: '青光眼早期诊断研究', taskName: '分发影像数据' },
-  { key: '2-阅片审核', projectId: 2, projectName: '视网膜病变图像分析', taskName: '阅片审核' },
-]);
+const recentProjects = computed(() => projectStore.recentProjects);
+const todoItems = computed(() => projectStore.todoItems);
+const pendingCount = computed(() => projectStore.pendingCount);
+const today = computed(() => new Date().toLocaleDateString('zh-CN'));
 
 const newProjectForm = ref({
   name: '',
@@ -206,9 +162,6 @@ const newProjectForm = ref({
   taskName: '',
   desc: '',
 });
-
-const pendingCount = computed(() => todoItems.value.length);
-const today = computed(() => new Date().toLocaleDateString('zh-CN'));
 
 function resetNewProjectForm() {
   newProjectForm.value = {
@@ -232,42 +185,24 @@ function closeCreateModal() {
 }
 
 function submitCreateProject() {
-  const project: ProjectItem = {
-    id: nextProjectId.value,
-    name: newProjectForm.value.name,
-    owner: newProjectForm.value.owner,
-    center: newProjectForm.value.center,
-    state: '待开始',
-    stateClass: 'pending',
-    desc: newProjectForm.value.desc,
-    date: newProjectForm.value.date,
-    members: newProjectForm.value.members,
-  };
+  projectStore.addProject(
+    {
+      name: newProjectForm.value.name,
+      owner: newProjectForm.value.owner,
+      center: newProjectForm.value.center,
+      desc: newProjectForm.value.desc,
+      date: newProjectForm.value.date,
+      members: newProjectForm.value.members,
+    },
+    newProjectForm.value.taskName,
+  );
 
-  recentProjects.value.unshift(project);
-
-  todoItems.value.unshift({
-    key: `${project.id}-${newProjectForm.value.taskName}`,
-    projectId: project.id,
-    projectName: project.name,
-    taskName: newProjectForm.value.taskName,
-  });
-
-  nextProjectId.value += 1;
   closeCreateModal();
 }
 
 function handleTask(project: ProjectItem) {
   const taskName = `${project.name} - 任务处理`;
-  const key = `${project.id}-default-task`;
-  if (todoItems.value.some((item) => item.key === key)) return;
-
-  todoItems.value.unshift({
-    key,
-    projectId: project.id,
-    projectName: project.name,
-    taskName,
-  });
+  projectStore.addTask(project, taskName, `${project.id}-default-task`);
 }
 
 function openDetailModal(project: ProjectItem) {
