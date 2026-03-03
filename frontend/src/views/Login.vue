@@ -33,8 +33,25 @@ async function onLogin() {
   error.value = '';
   try {
     const res = await login({ username: username.value, password: password.value });
-    userStore.setToken(res.data.data.token);
-    router.push(`/user/${res.data.data.id}`);
+    const { code, msg, data } = res.data || {};
+
+    if (code !== 0) {
+      if (msg === '登录失败') {
+        error.value = '密码错误，请重新输入';
+        window.alert('密码错误，请重新输入');
+      } else {
+        error.value = msg || '登录失败';
+      }
+      return;
+    }
+
+    if (!data?.token || !data?.id) {
+      error.value = '登录返回数据异常';
+      return;
+    }
+
+    userStore.setToken(data.token);
+    router.push(`/user/${data.id}`);
   } catch (e: any) {
     error.value = e.response?.data?.msg || '登录失败';
   }
