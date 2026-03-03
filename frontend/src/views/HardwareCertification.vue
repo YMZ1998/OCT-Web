@@ -95,14 +95,14 @@
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
               <button
-                v-for="page in totalPages"
+                v-for="page in imageTotalPages"
                 :key="page"
                 :class="['page-btn', page === currentPage ? 'active' : '']"
                 @click="goToPage(page)"
               >
                 {{ page }}
               </button>
-              <button :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">›</button>
+              <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
             </div>
           </template>
 
@@ -254,7 +254,7 @@ const pagedImages = computed(() => {
   return imageData.slice(start, start + pageSize);
 });
 
-const totalPages = computed(() => Math.ceil(imageData.length / pageSize));
+const imageTotalPages = computed(() => Math.ceil(imageData.length / pageSize));
 const pagedImages = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return imageData.slice(start, start + pageSize);
@@ -313,7 +313,7 @@ function persistState() {
 }
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return;
+  if (page < 1 || page > imageTotalPages.value) return;
   currentPage.value = page;
   persistState();
 }
