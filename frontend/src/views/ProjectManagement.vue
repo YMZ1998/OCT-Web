@@ -63,6 +63,7 @@
             <li v-for="item in todoItems" :key="item.key">
               <div class="todo-title">{{ item.taskName }}</div>
               <small>{{ item.projectName }}</small>
+              <button v-if="item.taskName.includes('认证')" class="todo-action" @click="openCertification(item)">进入认证</button>
             </li>
           </ul>
           <p v-if="!todoItems.length" class="empty">暂无待处理任务</p>
@@ -273,6 +274,10 @@ function openDetailModal(project: ProjectItem) {
   detailProject.value = project;
 }
 
+function openCertification(item: TodoItem) {
+  router.push(`/projects/${route.params.id}/hardware?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
+}
+
 onMounted(async () => {
   if (!userStore.token) {
     router.push('/login');
@@ -327,9 +332,10 @@ function onLogout() {
 .project-card footer button { justify-self: end; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 .project-card footer button.primary { background: #dbe7ff; color: #1f3b8f; border-color: #c8d7ff; }
 .todo-panel ul { list-style: none; margin: 0; padding: 12px; display: grid; gap: 10px; }
-.todo-panel li { border: 1px solid #dfe5f1; border-radius: 8px; padding: 14px; }
+.todo-panel li { border: 1px solid #dfe5f1; border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
 .todo-title { font-size: 20px; color: #1f2937; }
 .todo-panel li small { color: #64748b; }
+.todo-action { justify-self: start; border: 1px solid #c8d7ff; background: #edf3ff; color: #1f3b8f; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
 .empty { margin: 10px 12px 14px; color: #64748b; }
 
 .modal-mask {
