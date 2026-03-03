@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"oct-backend/internal/model"
 	"oct-backend/internal/repository"
 	"oct-backend/internal/utils"
@@ -40,8 +41,12 @@ func (s *UserService) Register(username, password, email, gender string, age int
 
 func (s *UserService) Login(username, password string) (string, error) {
 	user, err := s.Repo.FindByUsername(username)
-	if err != nil || !utils.CheckPasswordHash(password, user.Password) {
-		return "", err
+	if err != nil {
+		return "", errors.New("invalid username or password")
+	}
+
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return "", errors.New("invalid username or password")
 	}
 
 	now := time.Now().Unix()
