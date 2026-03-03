@@ -250,10 +250,13 @@ onMounted(async () => {
     return;
   }
 
+  projectStore.initForUser(String(route.params.id || userStore.userInfo?.id || 'guest'));
+
   try {
     const res = await getUser(route.params.id as string, userStore.token);
     user.value = res.data.data;
     userStore.setUserInfo(res.data.data);
+    projectStore.initForUser(String(res.data.data?.id || route.params.id || 'guest'));
     fillFormFromUser();
   } catch {
     user.value = null;
@@ -277,6 +280,7 @@ async function onSave() {
     );
     user.value = res.data.data;
     userStore.setUserInfo(res.data.data);
+    projectStore.initForUser(String(res.data.data?.id || route.params.id || 'guest'));
     message.value = '个人信息已更新并同步到数据库';
   } catch {
     message.value = '保存失败，请稍后重试';
