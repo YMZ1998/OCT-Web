@@ -11,7 +11,7 @@
 
       <nav class="menu">
         <a class="active" href="#">🏠 首页</a>
-        <a href="#">📁 项目管理</a>
+        <RouterLink :to="`/projects/${user?.id || route.params.id}`">📁 项目管理</RouterLink>
         <a href="#">📊 查询统计</a>
         <a href="#">✅ 质控管理</a>
         <a href="#">⚙️ 系统设置</a>
@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser, updateUser } from '../api/user';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
@@ -141,12 +141,6 @@ const today = computed(() => new Date().toLocaleDateString('zh-CN'));
 
 function formatDate(ts: number) {
   return new Date(ts * 1000).toLocaleDateString();
-}
-
-function fillFormFromUser() {
-  form.value.email = user.value?.email || '';
-  form.value.gender = user.value?.gender || '';
-  form.value.age = user.value?.age;
 }
 
 function fillFormFromUser() {
