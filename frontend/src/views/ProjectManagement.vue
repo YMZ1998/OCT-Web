@@ -153,8 +153,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { getUser } from '../api/user';
-import { useProjectStore, type ProjectItem, type TodoItem } from '../store/project';
+import { getUser, updateUserProjects } from '../api/user';
+import { useProjectStore, type ProjectItem, type ProjectStateData, type TodoItem } from '../store/project';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
 
@@ -196,6 +196,25 @@ const newProjectForm = ref({
   desc: '',
 });
 
+
+async function syncProjectsToServer() {
+  if (!userStore.token) return;
+  const userId = String(user.value?.id || route.params.id || userStore.userInfo?.id || '');
+  if (!userId) return;
+
+  const payload: ProjectStateData = {
+    recentProjects: projectStore.recentProjects,
+    todoItems: projectStore.todoItems,
+    nextProjectId: projectStore.nextProjectId,
+  };
+
+  try {
+    await updateUserProjects(userId, payload, userStore.token);
+  } catch {
+    // 后端同步失败时保留前端状态，避免阻塞用户操作
+  }
+}
+
 function resetNewProjectForm() {
   editingProjectId.value = null;
   newProjectForm.value = {
@@ -217,7 +236,7 @@ function closeCreateModal() {
   resetNewProjectForm();
 }
 
-function submitCreateProject() {
+async function submitCreateProject() {
   const payload = {
     name: newProjectForm.value.name,
     owner: newProjectForm.value.owner,
@@ -233,15 +252,18 @@ function submitCreateProject() {
     projectStore.addProject(payload);
   }
 
+  await syncProjectsToServer();
   closeCreateModal();
 }
 
-function handleTask(project: ProjectItem) {
+async function handleTask(project: ProjectItem) {
   projectStore.startProjectTasks(project);
+  await syncProjectsToServer();
 }
 
-function completeTask(item: TodoItem) {
+async function completeTask(item: TodoItem) {
   projectStore.completeTask(item.key);
+  await syncProjectsToServer();
 }
 
 
@@ -278,7 +300,14 @@ onMounted(async () => {
     const res = await getUser(route.params.id as string, userStore.token);
     user.value = res.data.data;
     userStore.setUserInfo(res.data.data);
-    projectStore.initForUser(String(res.data.data?.id || route.params.id || 'guest'));
+    const userId = String(res.data.data?.id || route.params.id || 'guest');
+    projectStore.initForUser(userId);
+
+    if (res.data.data?.project_state) {
+      projectStore.replaceState(res.data.data.project_state);
+    } else {
+      await syncProjectsToServer();
+    }
   } catch {
     user.value = null;
   }

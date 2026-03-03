@@ -42,15 +42,15 @@
       </header>
 
       <section class="tabs">
-        <button :class="['tab', stage === 'hardware' ? 'active' : '']" @click="switchStage('hardware')">
+        <button :class="tabClass('hardware')" @click="switchStage('hardware')">
           <span class="tab-icon">🧩</span>
           <span>硬件认证</span>
         </button>
-        <button :class="['tab', stage === 'technician' ? 'active' : '']" @click="switchStage('technician')">
+        <button :class="tabClass('technician')" @click="switchStage('technician')">
           <span class="tab-icon">👨‍🔧</span>
           <span>技师认证</span>
         </button>
-        <button :class="['tab', stage === 'certificate' ? 'active' : '']" @click="switchStage('certificate')">
+        <button :class="tabClass('certificate')" @click="switchStage('certificate')">
           <span class="tab-icon">🏅</span>
           <span>证书颁发</span>
         </button>
@@ -211,6 +211,7 @@ type FlowState = {
   certificateIssued: boolean;
   useSeal: boolean;
   useSign: boolean;
+  passedStages: Record<'hardware' | 'technician' | 'certificate', boolean>;
 };
 
 type ImageItem = {
@@ -234,13 +235,19 @@ const certificateNo = ref('');
 const certificateIssued = ref(false);
 const useSeal = ref(false);
 const useSign = ref(false);
+const passedStages = ref<Record<FlowState['stage'], boolean>>({
+  hardware: false,
+  technician: false,
+  certificate: false,
+});
 const pageSize = 12;
 
-const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
-  id: idx + 1,
-  sample: `样本${String(idx + 1).padStart(3, '0')}`,
-  type: '眼底照片',
-}));
+
+const docs = [
+  { name: '设备配置说明.pdf', size: '2.1MB', date: '2026-01-09' },
+  { name: '计量校准报告.pdf', size: '1.6MB', date: '2026-01-08' },
+  { name: '设备维护记录.pdf', size: '0.9MB', date: '2026-01-07' },
+];
 
 
 
@@ -268,6 +275,12 @@ const expiryDate = computed(() => {
   d.setFullYear(d.getFullYear() + 1);
   return d.toISOString().slice(0, 10);
 });
+const tabClass = (target: FlowState['stage']) => ({
+  tab: true,
+  active: stage.value === target,
+  passed: passedStages.value[target],
+});
+
 const qrCells = computed(() => {
   const source = certificateNo.value || `${projectId.value}-PENDING`;
   const chars = source.replace(/[^A-Za-z0-9]/g, '');
@@ -298,6 +311,7 @@ function persistState() {
     certificateIssued: certificateIssued.value,
     useSeal: useSeal.value,
     useSign: useSign.value,
+    passedStages: passedStages.value,
   };
   localStorage.setItem(flowKey.value, JSON.stringify(payload));
 }
@@ -333,6 +347,7 @@ function review(pass: boolean) {
 
   if (pass) {
     lastDecision.value = '认证通过';
+    passedStages.value[stage.value] = true;
     if (stage.value === 'hardware') {
       stage.value = 'technician';
       sendToTechnicianAccount('通过', `【硬件认证通过】${opinion.value}。流程已流转到“技师认证”。`);
@@ -343,6 +358,7 @@ function review(pass: boolean) {
     sendToTechnicianAccount('通过', `【认证通过】${opinion.value}。流程已流转到“证书颁发”。`);
   } else {
     lastDecision.value = '认证不通过';
+    passedStages.value[stage.value] = false;
     if (stage.value === 'hardware') {
       stage.value = 'hardware';
       sendToTechnicianAccount('不通过', `【硬件认证不通过】${opinion.value}。请先完成设备整改后再进入技师认证。`);
@@ -360,6 +376,7 @@ function issueCertificate() {
   }
   ensureCertificateMeta();
   certificateIssued.value = true;
+  passedStages.value.certificate = true;
   sendToTechnicianAccount('通知', `【证书已颁发】证书编号：${certificateNo.value}，请试验中心技师账户查收。`);
 }
 
@@ -411,6 +428,11 @@ onMounted(async () => {
       certificateIssued.value = parsed.certificateIssued || false;
       useSeal.value = parsed.useSeal || false;
       useSign.value = parsed.useSign || false;
+      passedStages.value = {
+        hardware: parsed.passedStages?.hardware || false,
+        technician: parsed.passedStages?.technician || false,
+        certificate: parsed.passedStages?.certificate || false,
+      };
     } catch {
       // ignore invalid cache
     }
@@ -465,6 +487,7 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+.tab.passed { color: #16a34a; border-bottom-color: #16a34a; }
 .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
 .panel { background: #fff; border: 1px solid #d2dae6; border-radius: 8px; padding: 14px; }
 .sub { margin: 12px 0 8px; color: #4b5563; }
