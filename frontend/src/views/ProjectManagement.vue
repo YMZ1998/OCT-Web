@@ -123,6 +123,7 @@
             <textarea v-model.trim="newProjectForm.desc" rows="3" required placeholder="请输入项目描述"></textarea>
           </label>
           <div class="modal-actions full">
+            <button v-if="editingProjectId" type="button" class="danger" @click="deleteEditingProject">删除项目</button>
             <button type="button" class="ghost" @click="closeCreateModal">取消</button>
             <button type="submit" class="primary">{{ editingProjectId ? '保存修改' : '创建项目' }}</button>
           </div>
@@ -277,6 +278,15 @@ async function completeTask(item: TodoItem) {
 }
 
 
+
+async function deleteEditingProject() {
+  if (!editingProjectId.value) return;
+  projectStore.deleteProject(editingProjectId.value);
+  detailProject.value = null;
+  closeCreateModal();
+  await syncProjectsToServer();
+}
+
 function openEditModal(project: ProjectItem) {
   editingProjectId.value = project.id;
   newProjectForm.value = {
@@ -317,6 +327,10 @@ onMounted(async () => {
       projectStore.replaceState(res.data.data.project_state);
     } else {
       await syncProjectsToServer();
+    }
+
+    if (route.query.action === 'create') {
+      openCreateModal();
     }
   } catch {
     user.value = null;
@@ -405,6 +419,7 @@ function onLogout() {
 .modal-actions button { border: 1px solid #cad5e4; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 .modal-actions .primary { background: #3f8fdb; border-color: #3f8fdb; color: #fff; }
 .modal-actions .ghost { background: #fff; }
+.modal-actions .danger { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; margin-right: auto; }
 .detail-grid {
   display: grid;
   grid-template-columns: 110px 1fr;

@@ -205,6 +205,15 @@ export const useProjectStore = defineStore('project', {
       this.persist();
     },
 
+    deleteProject(projectId: number) {
+      const idx = this.recentProjects.findIndex((item) => item.id === projectId);
+      if (idx < 0) return;
+
+      this.recentProjects.splice(idx, 1);
+      this.todoItems = this.todoItems.filter((item) => item.projectId !== projectId);
+      this.persist();
+    },
+
     updateProject(projectId: number, payload: Omit<ProjectItem, 'id' | 'state' | 'stateClass'>) {
       const idx = this.recentProjects.findIndex((item) => item.id === projectId);
       if (idx < 0) return;
