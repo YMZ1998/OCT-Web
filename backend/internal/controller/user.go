@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net/http"
 	"oct-backend/internal/response"
 	"oct-backend/internal/service"
 
@@ -53,7 +54,6 @@ func (ctl *UserController) Login(c *gin.Context) {
 	response.JSON(c, 0, "登录成功", gin.H{"token": token, "id": user.ID.Hex()})
 }
 
-// CRUD 示例
 func (ctl *UserController) GetUser(c *gin.Context) {
 	id := c.Param("id")
 	user, err := ctl.Service.GetUserByID(id)
@@ -63,9 +63,33 @@ func (ctl *UserController) GetUser(c *gin.Context) {
 	}
 	response.JSON(c, 0, "success", user)
 }
+
 func (ctl *UserController) UpdateUser(c *gin.Context) {
-	// ...更新用户信息...
+	id := c.Param("id")
+	if authID, ok := c.Get("userID"); !ok || authID != id {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "无权限修改该用户信息"})
+		return
+	}
+
+	var req struct {
+		Email  *string `json:"email"`
+		Gender *string `json:"gender"`
+		Age    *int    `json:"age"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, 400, "参数错误", nil)
+		return
+	}
+
+	user, err := ctl.Service.UpdateUserByID(id, req.Email, req.Gender, req.Age)
+	if err != nil {
+		response.JSON(c, 500, "更新失败", nil)
+		return
+	}
+
+	response.JSON(c, 0, "更新成功", user)
 }
+
 func (ctl *UserController) DeleteUser(c *gin.Context) {
-	// ...删除用户...
+	response.JSON(c, 501, "暂未实现", nil)
 }

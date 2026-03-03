@@ -1,15 +1,53 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-card blue-theme">
-      <h2>用户登录</h2>
-      <form @submit.prevent="onLogin">
-        <input v-model="username" placeholder="用户名" required />
-        <input v-model="password" type="password" placeholder="密码" required />
-        <button type="submit">登录</button>
-      </form>
-      <button class="register-btn" @click="goRegister">注册新用户</button>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
+  <div class="login-page">
+    <section class="brand-panel">
+      <div class="brand-content">
+        <h1>SJTURC眼科</h1>
+        <p>在线工作管理系统</p>
+        <div class="eye-illustration" aria-hidden="true">
+          <div class="eye-ring outer"></div>
+          <div class="eye-ring mid"></div>
+          <div class="eye-ring inner"></div>
+          <div class="pupil"></div>
+        </div>
+      </div>
+      <footer>© 2025 SJTURC眼科研究中心. 保留所有权利.</footer>
+    </section>
+
+    <section class="form-panel">
+      <div class="login-shell">
+        <div class="badge">✚</div>
+        <h2>欢迎登录</h2>
+        <p class="subtitle">请输入您的账号和密码</p>
+
+        <form @submit.prevent="onLogin">
+          <label for="username">用户名</label>
+          <div class="field">
+            <span class="icon">👤</span>
+            <input id="username" v-model="username" placeholder="请输入用户名" required />
+          </div>
+
+          <label for="password">密码</label>
+          <div class="field">
+            <span class="icon">🔒</span>
+            <input id="password" v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="请输入密码" required />
+            <button class="toggle" type="button" @click="showPassword = !showPassword">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+
+          <div class="helper-row">
+            <label class="remember"><input type="checkbox" v-model="remember" /> 记住密码</label>
+            <a href="#" @click.prevent>忘记密码?</a>
+          </div>
+
+          <button type="submit" class="submit-btn">登录 ⮕</button>
+          <div v-if="error" class="error">{{ error }}</div>
+        </form>
+
+        <p class="support">遇到登录问题? 请联系 <a href="#" @click.prevent>技术支持</a></p>
+      </div>
+    </section>
 
     <div v-if="showPasswordErrorModal" class="modal-mask" @click.self="closePasswordErrorModal">
       <div class="theme-modal" role="dialog" aria-modal="true" aria-labelledby="password-error-title">
@@ -30,13 +68,11 @@ import { login } from '../api/user';
 const username = ref('');
 const password = ref('');
 const error = ref('');
+const showPassword = ref(false);
+const remember = ref(false);
 const showPasswordErrorModal = ref(false);
 const router = useRouter();
 const userStore = useUserStore();
-
-function goRegister() {
-  router.push('/register');
-}
 
 function closePasswordErrorModal() {
   showPasswordErrorModal.value = false;
@@ -74,86 +110,161 @@ async function onLogin() {
 </script>
 
 <style scoped>
-.login-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80vh;
-  background: linear-gradient(135deg, #e3f0ff 0%, #f6f8fa 100%);
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  background: #eef2f6;
 }
-.login-card.blue-theme {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(64, 158, 255, 0.12);
-  padding: 40px 48px;
-  min-width: 340px;
-  max-width: 400px;
+.brand-panel {
+  background: linear-gradient(160deg, #045ea7, #0a4f96);
+  color: #fff;
+  padding: 46px 44px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  border: 2px solid #409eff;
+  justify-content: space-between;
 }
-.login-card h2 {
-  color: #409eff;
-  font-size: 1.6em;
-  font-weight: 700;
-  margin-bottom: 24px;
+.brand-content h1 {
+  margin: 0;
+  font-size: 52px;
+}
+.brand-content p {
+  margin: 12px 0 0;
+  font-size: 34px;
+  opacity: 0.96;
+}
+.eye-illustration {
+  margin: 60px auto 0;
+  width: 320px;
+  height: 320px;
+  position: relative;
+}
+.eye-ring {
+  position: absolute;
+  border-radius: 50%;
+  inset: 0;
+  margin: auto;
+}
+.eye-ring.outer {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(124, 201, 255, 0.45), rgba(124, 201, 255, 0.18));
+}
+.eye-ring.mid {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, #74a9ff, #4176df);
+}
+.eye-ring.inner {
+  width: 88px;
+  height: 88px;
+  background: #031329;
+  top: 116px;
+}
+.pupil {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  position: absolute;
+  top: 126px;
+  left: 122px;
+}
+.brand-panel footer {
+  font-size: 20px;
+  opacity: 0.9;
+}
+.form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-shell {
+  width: min(620px, 100%);
+}
+.badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #d6ebfb;
+  color: #177ac2;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 22px;
+}
+h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 50px;
+  color: #10203c;
+}
+.subtitle {
+  text-align: center;
+  color: #3a4a62;
+  margin: 10px 0 38px;
+  font-size: 30px;
 }
 form {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
-input {
-  padding: 10px 14px;
-  border: 1px solid #bcdcff;
-  border-radius: 8px;
-  font-size: 1em;
-  outline: none;
-  transition: border 0.2s;
+label {
+  font-size: 30px;
+  color: #1d2d47;
 }
-input:focus {
-  border-color: #409eff;
-}
-button {
-  background: linear-gradient(90deg, #409eff 60%, #66b1ff 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 0;
-  font-size: 1.08em;
-  cursor: pointer;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.08);
-  transition: background 0.2s;
-}
-button:hover {
-  background: linear-gradient(90deg, #337ecc 60%, #409eff 100%);
-}
-.register-btn {
-  margin-top: 18px;
-  width: 100%;
+.field {
+  display: flex;
+  align-items: center;
   background: #fff;
-  color: #409eff;
-  border: 1px solid #409eff;
-  border-radius: 8px;
-  padding: 10px 0;
-  font-size: 1.08em;
-  font-weight: 600;
+  border: 1px solid #c9d3df;
+  border-radius: 10px;
+  padding: 0 14px;
+}
+.field .icon { margin-right: 10px; opacity: 0.7; }
+input {
+  border: none;
+  flex: 1;
+  height: 54px;
+  outline: none;
+  font-size: 26px;
+  background: transparent;
+}
+.toggle {
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
 }
-.register-btn:hover {
-  background: #409eff;
+.helper-row {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #3f4f68;
+  font-size: 24px;
+}
+.helper-row a { color: #157ec6; text-decoration: none; }
+.remember { display: flex; align-items: center; gap: 6px; }
+.submit-btn {
+  margin-top: 14px;
+  height: 56px;
+  border: none;
+  border-radius: 10px;
+  background: #077cbc;
   color: #fff;
+  font-size: 30px;
+  cursor: pointer;
 }
-.error {
-  color: #e74c3c;
-  margin-top: 16px;
-  font-size: 1em;
+.error { color: #d93c3c; margin-top: 6px; font-size: 24px; }
+.support {
   text-align: center;
+  margin-top: 24px;
+  color: #3f4f68;
+  font-size: 24px;
 }
+.support a { color: #157ec6; text-decoration: none; }
+
 .modal-mask {
   position: fixed;
   inset: 0;
@@ -178,12 +289,21 @@ button:hover {
   font-size: 1.2rem;
   color: #337ecc;
 }
-.theme-modal p {
-  margin: 0;
-  color: #4a5d76;
-}
+.theme-modal p { margin: 0; color: #4a5d76; }
 .modal-btn {
   margin-top: 18px;
   width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #409eff;
+  color: #fff;
+  padding: 10px 0;
+}
+
+@media (max-width: 960px) {
+  .login-page { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+  h2 { font-size: 34px; }
+  .subtitle, label, input, .helper-row, .submit-btn, .support, .error { font-size: 18px; }
 }
 </style>
