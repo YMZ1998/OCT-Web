@@ -22,7 +22,7 @@
       <header class="topbar">
         <h1>首页</h1>
         <div class="user-box">
-          <span>👤 {{ user?.username || '项目经理' }}</span>
+          <span>👤 {{ user?.username}}</span>
           <button @click="onLogout">退出登录</button>
         </div>
       </header>

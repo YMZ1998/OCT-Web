@@ -22,7 +22,7 @@
       <header class="topbar">
         <h1>项目管理-硬件认证</h1>
         <div class="user-box">
-          <span>👤 {{ user?.username || '项目经理' }}</span>
+          <span>👤 {{ user?.username}}</span>
         </div>
       </header>
 
