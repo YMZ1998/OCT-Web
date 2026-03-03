@@ -10,6 +10,14 @@
       <button class="register-btn" @click="goRegister">注册新用户</button>
       <div v-if="error" class="error">{{ error }}</div>
     </div>
+
+    <div v-if="showPasswordErrorModal" class="modal-mask" @click.self="closePasswordErrorModal">
+      <div class="theme-modal" role="dialog" aria-modal="true" aria-labelledby="password-error-title">
+        <h3 id="password-error-title">登录失败</h3>
+        <p>密码错误，请重新输入</p>
+        <button class="modal-btn" @click="closePasswordErrorModal">我知道了</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -22,6 +30,7 @@ import { login } from '../api/user';
 const username = ref('');
 const password = ref('');
 const error = ref('');
+const showPasswordErrorModal = ref(false);
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -29,12 +38,35 @@ function goRegister() {
   router.push('/register');
 }
 
+function closePasswordErrorModal() {
+  showPasswordErrorModal.value = false;
+}
+
 async function onLogin() {
   error.value = '';
+  showPasswordErrorModal.value = false;
+
   try {
     const res = await login({ username: username.value, password: password.value });
-    userStore.setToken(res.data.data.token);
-    router.push(`/user/${res.data.data.id}`);
+    const { code, msg, data } = res.data || {};
+
+    if (code !== 0) {
+      if (msg === '登录失败') {
+        error.value = '密码错误，请重新输入';
+        showPasswordErrorModal.value = true;
+      } else {
+        error.value = msg || '登录失败';
+      }
+      return;
+    }
+
+    if (!data?.token || !data?.id) {
+      error.value = '登录返回数据异常';
+      return;
+    }
+
+    userStore.setToken(data.token);
+    router.push(`/user/${data.id}`);
   } catch (e: any) {
     error.value = e.response?.data?.msg || '登录失败';
   }
@@ -52,7 +84,7 @@ async function onLogin() {
 .login-card.blue-theme {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(64,158,255,0.12);
+  box-shadow: 0 4px 24px rgba(64, 158, 255, 0.12);
   padding: 40px 48px;
   min-width: 340px;
   max-width: 400px;
@@ -93,7 +125,7 @@ button {
   font-size: 1.08em;
   cursor: pointer;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(64,158,255,0.08);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.08);
   transition: background 0.2s;
 }
 button:hover {
@@ -121,5 +153,37 @@ button:hover {
   margin-top: 16px;
   font-size: 1em;
   text-align: center;
+}
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(64, 158, 255, 0.18);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.theme-modal {
+  width: min(88vw, 360px);
+  background: #fff;
+  border: 2px solid #409eff;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(64, 158, 255, 0.28);
+  padding: 22px 20px 18px;
+  text-align: center;
+}
+.theme-modal h3 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  color: #337ecc;
+}
+.theme-modal p {
+  margin: 0;
+  color: #4a5d76;
+}
+.modal-btn {
+  margin-top: 18px;
+  width: 100%;
 }
 </style>
