@@ -278,8 +278,8 @@ function onLogout() {
 .brand h2 { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; }
 .brand p { margin: 3px 0 0; font-size: 16px; line-height: 1.2; opacity: .9; }
 .menu { margin-top: 18px; display: grid; gap: 12px; }
-.menu a { color: #ecf5ff; text-decoration: none; padding: 10px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
-.menu-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; line-height: 1; }
+.menu a { color: #ecf5ff; text-decoration: none; padding: 10px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; line-height: 20px; }
+.menu-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: flex-start; flex-shrink: 0; font-size: 16px; line-height: 1; text-align: left; }
 .menu-label { line-height: 20px; }
 .menu a.active, .menu a:hover { background: rgba(255,255,255,.2); }
 .content { flex: 1; padding: 18px 20px; }
