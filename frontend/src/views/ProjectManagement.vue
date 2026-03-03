@@ -79,7 +79,10 @@
             <li v-for="item in todoItems" :key="item.key">
               <div class="todo-title">{{ item.taskName }}</div>
               <small>{{ item.projectName }}</small>
-              <button v-if="item.taskName.includes('认证')" class="todo-action" @click="openCertification(item)">进入认证</button>
+              <div class="todo-actions">
+                <button class="todo-action" @click="openCertification(item)">进入处理</button>
+                <button class="todo-done" @click="completeTask(item)">完成任务</button>
+              </div>
             </li>
           </ul>
           <p v-if="!todoItems.length" class="empty">暂无待处理任务</p>
@@ -110,10 +113,6 @@
           <label>
             参与人数
             <input v-model.number="newProjectForm.members" type="number" min="1" required />
-          </label>
-          <label>
-            初始待处理任务
-            <input v-model.trim="newProjectForm.taskName" placeholder="如：认证" :required="!editingProjectId" />
           </label>
           <label class="full">
             项目描述
@@ -176,7 +175,6 @@ const newProjectForm = ref({
   center: '',
   date: '',
   members: 1,
-  taskName: '',
   desc: '',
 });
 
@@ -188,7 +186,6 @@ function resetNewProjectForm() {
     center: '',
     date: '',
     members: 1,
-    taskName: '',
     desc: '',
   };
 }
@@ -215,15 +212,18 @@ function submitCreateProject() {
   if (editingProjectId.value) {
     projectStore.updateProject(editingProjectId.value, payload);
   } else {
-    projectStore.addProject(payload, newProjectForm.value.taskName);
+    projectStore.addProject(payload);
   }
 
   closeCreateModal();
 }
 
 function handleTask(project: ProjectItem) {
-  const taskName = `${project.name} - 任务处理`;
-  projectStore.addTask(project, taskName, `${project.id}-default-task`);
+  projectStore.startProjectTasks(project);
+}
+
+function completeTask(item: TodoItem) {
+  projectStore.completeTask(item.key);
 }
 
 
@@ -235,7 +235,6 @@ function openEditModal(project: ProjectItem) {
     center: project.center,
     date: project.date,
     members: project.members,
-    taskName: '',
     desc: project.desc,
   };
   showCreateModal.value = true;
@@ -301,6 +300,7 @@ function onLogout() {
 .state { padding: 4px 14px; border-radius: 999px; color: #fff; font-size: 14px; }
 .state.running { background: #3b82f6; }
 .state.pending { background: #f59e0b; }
+.state.completed { background: #10b981; }
 .project-card footer { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 10px; align-items: center; color: #6b7280; }
 .project-card footer button { justify-self: end; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 .project-card footer button.primary { background: #dbe7ff; color: #1f3b8f; border-color: #c8d7ff; }
@@ -308,7 +308,9 @@ function onLogout() {
 .todo-panel li { border: 1px solid #dfe5f1; border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
 .todo-title { font-size: 20px; color: #1f2937; }
 .todo-panel li small { color: #64748b; }
+.todo-actions { display: flex; gap: 8px; }
 .todo-action { justify-self: start; border: 1px solid #c8d7ff; background: #edf3ff; color: #1f3b8f; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.todo-done { border: 1px solid #86efac; background: #dcfce7; color: #166534; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
 .empty { margin: 10px 12px 14px; color: #64748b; }
 
 .modal-mask {
