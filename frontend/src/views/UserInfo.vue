@@ -149,12 +149,6 @@ function fillFormFromUser() {
   form.value.age = user.value?.age;
 }
 
-function fillFormFromUser() {
-  form.value.email = user.value?.email || '';
-  form.value.gender = user.value?.gender || '';
-  form.value.age = user.value?.age;
-}
-
 onMounted(async () => {
   if (!userStore.token) {
     router.push('/login');
