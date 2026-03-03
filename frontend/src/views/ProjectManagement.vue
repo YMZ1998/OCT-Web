@@ -273,10 +273,13 @@ onMounted(async () => {
     return;
   }
 
+  projectStore.initForUser(String(route.params.id || userStore.userInfo?.id || 'guest'));
+
   try {
     const res = await getUser(route.params.id as string, userStore.token);
     user.value = res.data.data;
     userStore.setUserInfo(res.data.data);
+    projectStore.initForUser(String(res.data.data?.id || route.params.id || 'guest'));
   } catch {
     user.value = null;
   }

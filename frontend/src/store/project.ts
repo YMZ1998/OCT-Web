@@ -19,13 +19,18 @@ export type TodoItem = {
   taskName: string;
 };
 
-type ProjectState = {
+type ProjectStateData = {
   recentProjects: ProjectItem[];
   todoItems: TodoItem[];
   nextProjectId: number;
 };
 
-const STORAGE_KEY = 'oct-project-state';
+type ProjectState = ProjectStateData & {
+  activeUserId: string;
+};
+
+const STORAGE_KEY_PREFIX = 'oct-project-state';
+const LEGACY_STORAGE_KEY = 'oct-project-state';
 
 const STANDARD_TASKS = ['认证', '分发影像数据', '阅片审核'] as const;
 
@@ -35,7 +40,11 @@ function getProjectStateByTodos(hasStarted: boolean, todoCount: number): Pick<Pr
   return { state: '进行中', stateClass: 'running' };
 }
 
-function defaultState(): ProjectState {
+function storageKeyFor(userId: string) {
+  return `${STORAGE_KEY_PREFIX}-${userId}`;
+}
+
+function defaultState(): ProjectStateData {
   return {
     recentProjects: [
       {
@@ -70,12 +79,15 @@ function defaultState(): ProjectState {
   };
 }
 
-function loadState(): ProjectState {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return defaultState();
+function loadState(userId: string): ProjectStateData {
+  const raw = localStorage.getItem(storageKeyFor(userId));
+  const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+  const source = raw || legacyRaw;
+
+  if (!source) return defaultState();
 
   try {
-    const parsed = JSON.parse(raw) as ProjectState;
+    const parsed = JSON.parse(source) as ProjectStateData;
     if (!Array.isArray(parsed.recentProjects) || !Array.isArray(parsed.todoItems)) {
       return defaultState();
     }
@@ -85,15 +97,32 @@ function loadState(): ProjectState {
   }
 }
 
+const initialUserId = 'guest';
+const initialState = loadState(initialUserId);
+
 export const useProjectStore = defineStore('project', {
-  state: () => loadState(),
+  state: (): ProjectState => ({
+    ...initialState,
+    activeUserId: initialUserId,
+  }),
   getters: {
     pendingCount: (state) => state.todoItems.length,
   },
   actions: {
+    initForUser(userId: string | number) {
+      const normalized = String(userId || 'guest');
+      if (normalized === this.activeUserId) return;
+
+      const next = loadState(normalized);
+      this.recentProjects = next.recentProjects;
+      this.todoItems = next.todoItems;
+      this.nextProjectId = next.nextProjectId;
+      this.activeUserId = normalized;
+    },
+
     persist() {
       localStorage.setItem(
-        STORAGE_KEY,
+        storageKeyFor(this.activeUserId),
         JSON.stringify({
           recentProjects: this.recentProjects,
           todoItems: this.todoItems,
