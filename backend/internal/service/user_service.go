@@ -83,3 +83,11 @@ func (s *UserService) UpdateUserByID(id string, email, gender *string, age *int)
 
 	return s.Repo.FindByID(id)
 }
+
+func (s *UserService) UpdateUserProjectState(id string, state model.ProjectState) (*model.User, error) {
+	if err := s.Repo.Update(id, bson.M{"project_state": state}); err != nil {
+		return nil, err
+	}
+
+	return s.Repo.FindByID(id)
+}
