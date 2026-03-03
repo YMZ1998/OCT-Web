@@ -16,9 +16,7 @@
 
     <section class="form-panel">
       <div class="login-shell">
-        <div class="badge">✚</div>
         <h2>欢迎登录</h2>
-        <p class="subtitle">请输入您的账号和密码</p>
 
         <form @submit.prevent="onLogin">
           <label for="username">用户名</label>
@@ -36,12 +34,7 @@
             </button>
           </div>
 
-          <div class="helper-row">
-            <label class="remember"><input type="checkbox" v-model="remember" /> 记住密码</label>
-            <a href="#" @click.prevent>忘记密码?</a>
-          </div>
-
-          <button type="submit" class="submit-btn">登录 ⮕</button>
+          <button type="submit" class="submit-btn">登录</button>
           <div v-if="error" class="error">{{ error }}</div>
         </form>
 
