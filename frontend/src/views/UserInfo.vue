@@ -11,7 +11,7 @@
 
       <nav class="menu">
         <a class="active" href="#">🏠 首页</a>
-        <a href="#">📁 项目管理</a>
+        <RouterLink :to="`/projects/${user?.id || route.params.id}`">📁 项目管理</RouterLink>
         <a href="#">📊 查询统计</a>
         <a href="#">✅ 质控管理</a>
         <a href="#">⚙️ 系统设置</a>
@@ -114,39 +114,51 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser, updateUser } from '../api/user';
+import { useProjectStore } from '../store/project';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const projectStore = useProjectStore();
 const user = ref<User | null>(null);
 const saving = ref(false);
 const message = ref('');
 const form = ref({ email: '', gender: '', age: undefined as number | undefined });
 
-const taskStats = [
-  { name: '硬件认证', done: 25, total: 25, progress: 100, color: '#16a34a', status: '已完成', statusClass: 's-done', icon: '✅' },
-  { name: '技师认证', done: 0, total: 15, progress: 0, color: '#f59e0b', status: '待处理', statusClass: 's-wait', icon: '📌' },
-  { name: '证书颁发', done: 12, total: 20, progress: 60, color: '#0284c7', status: '进行中', statusClass: 's-doing', icon: '🏅' },
-  { name: '阅片分发', done: 18, total: 30, progress: 60, color: '#7c3aed', status: '进行中', statusClass: 's-doing', icon: '👁' },
-  { name: '阅片审核', done: 8, total: 20, progress: 40, color: '#4f46e5', status: '进行中', statusClass: 's-doing', icon: '🔍' },
-  { name: '质量抽查', done: 2, total: 10, progress: 20, color: '#ef4444', status: '紧急', statusClass: 's-urgent', icon: '⚠️' },
-];
+const taskStats = computed(() => {
+  const todos = projectStore.todoItems;
 
-const pendingCount = computed(() => taskStats.filter((i) => i.status !== '已完成').length);
+  const countPending = (keyword: string) =>
+    todos.filter((item) => item.taskName.includes(keyword)).length;
+
+  const buildItem = (name: string, total: number, color: string, icon: string, keyword: string) => {
+    const pending = countPending(keyword);
+    const done = Math.max(total - pending, 0);
+    const progress = Math.round((done / total) * 100);
+    const status = pending === 0 ? '已完成' : pending === total ? '待处理' : '进行中';
+    const statusClass = pending === 0 ? 's-done' : pending === total ? 's-wait' : 's-doing';
+    return { name, done, total, progress, color, status, statusClass, icon };
+  };
+
+  return [
+    buildItem('硬件认证', 6, '#16a34a', '✅', '认证'),
+    buildItem('技师认证', 6, '#f59e0b', '📌', '技师'),
+    buildItem('证书颁发', 6, '#0284c7', '🏅', '证书'),
+    buildItem('阅片分发', 6, '#7c3aed', '👁', '分发'),
+    buildItem('阅片审核', 6, '#4f46e5', '🔍', '审核'),
+    buildItem('质量抽查', 6, '#ef4444', '⚠️', '抽查'),
+  ];
+});
+
+const pendingCount = computed(() => projectStore.pendingCount);
 const today = computed(() => new Date().toLocaleDateString('zh-CN'));
 
 function formatDate(ts: number) {
   return new Date(ts * 1000).toLocaleDateString();
-}
-
-function fillFormFromUser() {
-  form.value.email = user.value?.email || '';
-  form.value.gender = user.value?.gender || '';
-  form.value.age = user.value?.age;
 }
 
 function fillFormFromUser() {
