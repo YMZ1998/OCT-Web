@@ -242,23 +242,7 @@ const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
   type: '眼底照片',
 }));
 
-const totalPages = computed(() => Math.ceil(imageData.length / pageSize));
-const pagedImages = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return imageData.slice(start, start + pageSize);
-});
 
-const totalPages = computed(() => Math.ceil(imageData.length / pageSize));
-const pagedImages = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return imageData.slice(start, start + pageSize);
-});
-
-const imageTotalPages = computed(() => Math.ceil(imageData.length / pageSize));
-const pagedImages = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return imageData.slice(start, start + pageSize);
-});
 
 const projectId = computed(() => String(route.query.projectId || 'XXXXXXXXXX'));
 const flowKey = computed(() => `oct-hardware-flow-${projectId.value}`);
