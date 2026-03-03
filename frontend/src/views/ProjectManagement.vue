@@ -10,11 +10,26 @@
       </div>
 
       <nav class="menu">
-        <RouterLink :to="`/user/${user?.id || route.params.id}`">🏠 首页</RouterLink>
-        <a class="active" href="#" @click.prevent>📂 项目管理</a>
-        <a href="#" @click.prevent>📊 查询统计</a>
-        <a href="#" @click.prevent>✅ 质控管理</a>
-        <a href="#" @click.prevent>⚙️ 系统设置</a>
+        <RouterLink :to="`/user/${user?.id || route.params.id}`">
+          <span class="menu-icon">🏠</span>
+          <span class="menu-label">首页</span>
+        </RouterLink>
+        <a class="active" href="#" @click.prevent>
+          <span class="menu-icon">📂</span>
+          <span class="menu-label">项目管理</span>
+        </a>
+        <a href="#" @click.prevent>
+          <span class="menu-icon">📊</span>
+          <span class="menu-label">查询统计</span>
+        </a>
+        <a href="#" @click.prevent>
+          <span class="menu-icon">✅</span>
+          <span class="menu-label">质控管理</span>
+        </a>
+        <a href="#" @click.prevent>
+          <span class="menu-icon">⚙️</span>
+          <span class="menu-label">系统设置</span>
+        </a>
       </nav>
     </aside>
 
@@ -260,10 +275,12 @@ function onLogout() {
 .sidebar { width: 250px; background: #3f8fdb; color: #fff; padding: 22px 16px; }
 .brand { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.25); padding-bottom: 14px; }
 .logo { width: 48px; height: 48px; border-radius: 8px; background: #fff; color: #3f8fdb; display: grid; place-items: center; font-size: 24px; }
-.brand h2 { margin: 0; }
-.brand p { margin: 4px 0 0; opacity: .9; }
+.brand h2 { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; }
+.brand p { margin: 3px 0 0; font-size: 16px; line-height: 1.2; opacity: .9; }
 .menu { margin-top: 18px; display: grid; gap: 12px; }
-.menu a { color: #ecf5ff; text-decoration: none; padding: 10px 12px; border-radius: 8px; }
+.menu a { color: #ecf5ff; text-decoration: none; padding: 10px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; line-height: 20px; }
+.menu-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: flex-start; flex-shrink: 0; font-size: 16px; line-height: 1; text-align: left; }
+.menu-label { line-height: 20px; }
 .menu a.active, .menu a:hover { background: rgba(255,255,255,.2); }
 .content { flex: 1; padding: 18px 20px; }
 .topbar { background: #fff; border: 1px solid #d2dae6; border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
