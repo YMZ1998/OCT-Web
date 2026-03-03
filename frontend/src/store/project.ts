@@ -19,7 +19,7 @@ export type TodoItem = {
   taskName: string;
 };
 
-type ProjectStateData = {
+export type ProjectStateData = {
   recentProjects: ProjectItem[];
   todoItems: TodoItem[];
   nextProjectId: number;
@@ -109,6 +109,13 @@ export const useProjectStore = defineStore('project', {
     pendingCount: (state) => state.todoItems.length,
   },
   actions: {
+    replaceState(next: ProjectStateData) {
+      this.recentProjects = next.recentProjects;
+      this.todoItems = next.todoItems;
+      this.nextProjectId = next.nextProjectId;
+      this.persist();
+    },
+
     initForUser(userId: string | number) {
       const normalized = String(userId || 'guest');
       if (normalized === this.activeUserId) return;
