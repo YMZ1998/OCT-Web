@@ -77,11 +77,10 @@
           </header>
           <div class="todo-groups" v-if="groupedTodoItems.length">
             <section class="todo-group" v-for="group in groupedTodoItems" :key="group.projectId">
-              <h4>项目{{ group.projectId }} · {{ group.projectName }}</h4>
+              <h4>{{ group.projectName }}</h4>
               <ul>
                 <li v-for="item in group.items" :key="item.key">
                   <div class="todo-title">{{ item.taskName }}</div>
-                  <small>任务标识：{{ item.key }}</small>
                   <div class="todo-actions">
                     <button class="todo-action" @click="openCertification(item)">进入处理</button>
                     <button class="todo-done" @click="completeTask(item)">完成任务</button>
@@ -247,7 +246,7 @@ function closeCreateModal() {
   resetNewProjectForm();
 }
 
-function submitCreateProject() {
+async function submitCreateProject() {
   const payload = {
     name: newProjectForm.value.name,
     owner: newProjectForm.value.owner,
@@ -263,16 +262,17 @@ function submitCreateProject() {
     projectStore.addProject(payload);
   }
 
+  await syncProjectsToServer();
   closeCreateModal();
   void syncProjectsToServer();
 }
 
-function handleTask(project: ProjectItem) {
+async function handleTask(project: ProjectItem) {
   projectStore.startProjectTasks(project);
   void syncProjectsToServer();
 }
 
-function completeTask(item: TodoItem) {
+async function completeTask(item: TodoItem) {
   projectStore.completeTask(item.key);
   void syncProjectsToServer();
 }
