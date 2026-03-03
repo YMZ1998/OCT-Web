@@ -226,7 +226,7 @@ const user = ref<User | null>(null);
 
 const opinion = ref('');
 const formMessage = ref('');
-const stage = ref<FlowState['stage']>('hardware');
+const stage = ref<FlowState['stage']>('technician');
 const messages = ref<ReviewMessage[]>([]);
 const lastDecision = ref('');
 const currentPage = ref(1);
@@ -242,10 +242,6 @@ const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
   type: '眼底照片',
 }));
 
-const docs = [
-  { name: '硬件设备清单.pdf', size: '2.5MB', date: '2026-02-28' },
-  { name: '校准证书合集.pdf', size: '4.8MB', date: '2026-02-28' },
-];
 
 const imageTotalPages = computed(() => Math.ceil(imageData.length / pageSize));
 const pagedImages = computed(() => {
