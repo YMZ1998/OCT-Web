@@ -144,7 +144,7 @@
       </div>
 
       <footer class="page-footer">
-        <span>SJTURC眼科在吸纳工作管理系统</span>
+        <span>SJTURC眼科工作管理系统</span>
         <span>版本1.0　<a href="#" @click.prevent>帮助</a></span>
       </footer>
     </main>
