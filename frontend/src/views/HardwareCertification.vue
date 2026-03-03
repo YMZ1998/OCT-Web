@@ -249,6 +249,11 @@ const docs = [
   { name: '设备维护记录.pdf', size: '0.9MB', date: '2026-01-07' },
 ];
 
+const docs = [
+  { name: '设备配置说明.pdf', size: '2.1MB', date: '2026-01-09' },
+  { name: '计量校准报告.pdf', size: '1.6MB', date: '2026-01-08' },
+  { name: '设备维护记录.pdf', size: '0.9MB', date: '2026-01-07' },
+];
 
 
 

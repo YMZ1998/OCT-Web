@@ -215,6 +215,15 @@ async function syncProjectsToServer() {
   }
 }
 
+
+function hasServerProjectState(state: any) {
+  if (!state || typeof state !== 'object') return false;
+  const hasProjects = Array.isArray(state.recentProjects);
+  const hasTodos = Array.isArray(state.todoItems);
+  const hasNextId = Number(state.nextProjectId || 0) > 0;
+  return hasProjects || hasTodos || hasNextId;
+}
+
 function resetNewProjectForm() {
   editingProjectId.value = null;
   newProjectForm.value = {
@@ -304,7 +313,7 @@ onMounted(async () => {
     const userId = String(res.data.data?.id || route.params.id || 'guest');
     projectStore.initForUser(userId);
 
-    if (res.data.data?.project_state) {
+    if (hasServerProjectState(res.data.data?.project_state)) {
       projectStore.replaceState(res.data.data.project_state);
     } else {
       await syncProjectsToServer();

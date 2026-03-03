@@ -79,6 +79,19 @@ function defaultState(): ProjectStateData {
   };
 }
 
+function normalizeProjectState(input: Partial<ProjectStateData> | null | undefined): ProjectStateData {
+  const recentProjects = Array.isArray(input?.recentProjects) ? input.recentProjects : [];
+  const todoItems = Array.isArray(input?.todoItems) ? input.todoItems : [];
+  const fallbackNextId = recentProjects.reduce((max, item) => Math.max(max, Number(item?.id || 0)), 0) + 1;
+  const nextProjectId = Number(input?.nextProjectId || 0) > 0 ? Number(input?.nextProjectId) : fallbackNextId;
+
+  return {
+    recentProjects,
+    todoItems,
+    nextProjectId,
+  };
+}
+
 function loadState(userId: string): ProjectStateData {
   const raw = localStorage.getItem(storageKeyFor(userId));
   const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -87,11 +100,12 @@ function loadState(userId: string): ProjectStateData {
   if (!source) return defaultState();
 
   try {
-    const parsed = JSON.parse(source) as ProjectStateData;
-    if (!Array.isArray(parsed.recentProjects) || !Array.isArray(parsed.todoItems)) {
+    const parsed = JSON.parse(source) as Partial<ProjectStateData>;
+    const normalized = normalizeProjectState(parsed);
+    if (!normalized.recentProjects.length && !normalized.todoItems.length && normalized.nextProjectId <= 1) {
       return defaultState();
     }
-    return parsed;
+    return normalized;
   } catch {
     return defaultState();
   }
@@ -109,10 +123,11 @@ export const useProjectStore = defineStore('project', {
     pendingCount: (state) => state.todoItems.length,
   },
   actions: {
-    replaceState(next: ProjectStateData) {
-      this.recentProjects = next.recentProjects;
-      this.todoItems = next.todoItems;
-      this.nextProjectId = next.nextProjectId;
+    replaceState(next: Partial<ProjectStateData> | null | undefined) {
+      const normalized = normalizeProjectState(next);
+      this.recentProjects = normalized.recentProjects;
+      this.todoItems = normalized.todoItems;
+      this.nextProjectId = normalized.nextProjectId;
       this.persist();
     },
 
