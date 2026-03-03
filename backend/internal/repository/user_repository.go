@@ -43,12 +43,20 @@ func (r *UserRepository) FindByID(id string) (*model.User, error) {
 }
 
 func (r *UserRepository) Update(id string, update bson.M) error {
-	_, err := r.Coll.UpdateOne(context.Background(), bson.M{"_id": id}, bson.M{"$set": update})
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = r.Coll.UpdateOne(context.Background(), bson.M{"_id": objID}, bson.M{"$set": update})
 	return err
 }
 
 func (r *UserRepository) Delete(id string) error {
-	_, err := r.Coll.DeleteOne(context.Background(), bson.M{"_id": id})
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = r.Coll.DeleteOne(context.Background(), bson.M{"_id": objID})
 	return err
 }
 
