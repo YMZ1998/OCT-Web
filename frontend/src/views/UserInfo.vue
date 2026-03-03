@@ -149,6 +149,12 @@ function fillFormFromUser() {
   form.value.age = user.value?.age;
 }
 
+function fillFormFromUser() {
+  form.value.email = user.value?.email || '';
+  form.value.gender = user.value?.gender || '';
+  form.value.age = user.value?.age;
+}
+
 onMounted(async () => {
   if (!userStore.token) {
     router.push('/login');
@@ -257,4 +263,7 @@ th, td { padding: 12px; border-bottom: 1px solid #edf0f5; text-align: center; }
   .dist-panel { flex-direction: column; padding: 16px 0; }
   .topbar, .banner, .page-footer { flex-direction: column; gap: 10px; align-items: flex-start; }
 }
+.actions button.secondary { background: #909399; }
+.actions button.danger { background: #f56c6c; }
+.actions button:disabled { opacity: 0.7; cursor: not-allowed; }
 </style>
