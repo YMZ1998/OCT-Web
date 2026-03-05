@@ -473,43 +473,6 @@ function switchStage(nextStage: FlowState['stage']) {
   persistState();
 }
 
-function stageByTaskName(taskName: string): FlowState['stage'] | null {
-  if (taskName === '认证') return 'hardware';
-  if (taskName === '分发影像数据') return 'technician';
-  if (taskName === '阅片审核') return 'technician';
-  if (taskName === '证书颁发') return 'certificate';
-  return null;
-}
-
-function syncStageByTaskQuery() {
-  const taskName = String(route.query.task || '').trim();
-  const mappedStage = stageByTaskName(taskName);
-  if (!mappedStage) return;
-  switchStage(mappedStage);
-  if (taskName === '分发影像数据') {
-    distributionStep.value = 'screening';
-  }
-  if (taskName === '阅片审核') {
-    distributionStep.value = 'reading';
-  }
-  persistState();
-}
-
-function stageByTaskName(taskName: string): FlowState['stage'] | null {
-  if (taskName === '认证') return 'hardware';
-  if (taskName === '分发影像数据') return 'technician';
-  if (taskName === '阅片审核') return 'technician';
-  if (taskName === '证书颁发') return 'certificate';
-  return null;
-}
-
-function syncStageByTaskQuery() {
-  const taskName = String(route.query.task || '').trim();
-  const mappedStage = stageByTaskName(taskName);
-  if (!mappedStage) return;
-  switchStage(mappedStage);
-}
-
 function sendToTechnicianAccount(result: ReviewMessage['result'], content: string) {
   messages.value.unshift({
     result,
