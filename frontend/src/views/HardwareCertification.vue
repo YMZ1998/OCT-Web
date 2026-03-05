@@ -35,13 +35,13 @@
 
     <main class="content">
       <header class="topbar">
-        <h1>项目管理-{{ stageLabel }}</h1>
+        <h1>{{ pageTitle }}</h1>
         <div class="user-box">
           <span>👤 {{ user?.username }}</span>
         </div>
       </header>
 
-      <section class="tabs">
+      <section class="tabs" v-if="stage !== 'technician'">
         <button :class="tabClass('hardware')" @click="switchStage('hardware')">
           <span class="tab-icon">🧩</span>
           <span>硬件认证</span>
@@ -54,6 +54,13 @@
           <span class="tab-icon">🏅</span>
           <span>证书颁发</span>
         </button>
+      </section>
+
+      <section v-else class="distribution-top-steps">
+        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
+        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
+        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
+        <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
       </section>
 
       <section class="main-grid">
@@ -78,19 +85,30 @@
             </div>
           </template>
 
-          <template v-else-if="stage === 'technician'">
-            <h3>影像查看数据</h3>
-            <p class="sub">已导入影像数据，医生可查看后撰写审核意见</p>
+          <template v-else-if="stage === 'technician' && distributionStep === 'inspection'">
+            <section class="task-header">
+              <p class="sub">任务列表</p>
+              <div class="task-actions">
+                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
+                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
+              </div>
+            </section>
 
-            <div class="image-grid">
-              <article class="image-card" v-for="item in pagedImages" :key="item.id">
-                <div class="thumb">🖼️</div>
-                <div class="meta">
-                  <strong>{{ item.sample }}</strong>
-                  <small>{{ item.type }}</small>
-                </div>
+            <div class="task-list">
+              <article class="task-card" v-for="item in pagedImages" :key="item.id">
+                <label>
+                  <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
+                  <div class="task-main">
+                    <strong>{{ item.sample }}</strong>
+                    <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
+                    <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
+                  </div>
+                </label>
+                <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
               </article>
             </div>
+
+            <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
 
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
@@ -103,6 +121,16 @@
                 {{ page }}
               </button>
               <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
+            </div>
+          </template>
+
+          <template v-else-if="stage === 'technician'">
+            <h3>影像分发</h3>
+            <p class="sub">当前阶段：{{ distributionStepLabel }}</p>
+            <div class="stage-placeholder">
+              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，可在顶部自由切换到“影像数据检查阶段”。</p>
+              <p v-else-if="distributionStep === 'reading'">当前为阅片阶段，影像将进入医生阅片审核流程。</p>
+              <p v-else>当前为质量抽查阶段，可对已分发影像进行质量追踪。</p>
             </div>
           </template>
 
@@ -156,7 +184,7 @@
           </template>
         </div>
 
-        <div class="panel opinion-panel">
+        <div class="panel opinion-panel" v-if="stage !== 'technician'">
           <h3>审核意见</h3>
           <textarea v-model.trim="opinion" :placeholder="opinionPlaceholder"></textarea>
 
@@ -184,13 +212,42 @@
             <p v-if="!messages.length" class="empty">暂无通知记录</p>
           </div>
         </div>
+
+        <div class="panel task-detail-panel" v-else>
+          <h3>任务详情</h3>
+          <template v-if="distributionStep === 'inspection' && activeTaskDetail">
+            <dl>
+              <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
+              <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
+              <dt>年龄</dt><dd>{{ activeTaskDetail.age }} 岁</dd>
+              <dt>检查类型</dt><dd>{{ activeTaskDetail.type }}</dd>
+              <dt>采集时间</dt><dd>{{ activeTaskDetail.date }}</dd>
+              <dt>影像数量</dt><dd>{{ activeTaskDetail.imageCount }} 张</dd>
+            </dl>
+            <button class="notify" @click="viewFullImage">查看完整影像</button>
+          </template>
+          <p v-else-if="distributionStep !== 'inspection'" class="empty">请先进入“影像数据检查阶段”，再查看任务详情。</p>
+          <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
+          <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
+        </div>
       </section>
     </main>
+
+    <div v-if="showImagePreview && activeTaskDetail" class="modal-mask" @click.self="showImagePreview = false">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="image-preview-title">
+        <h3 id="image-preview-title">完整影像预览</h3>
+        <p class="sub">{{ activeTaskDetail.sample }} · {{ activeTaskDetail.type }}</p>
+        <div class="image-preview">{{ activeTaskDetail.sample }} 影像图</div>
+        <div class="modal-actions">
+          <button class="primary" @click="showImagePreview = false">关闭</button>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser } from '../api/user';
 import { useUserStore } from '../store/user';
@@ -204,6 +261,7 @@ type ReviewMessage = {
 
 type FlowState = {
   stage: 'hardware' | 'technician' | 'certificate';
+  distributionStep: 'screening' | 'inspection' | 'reading' | 'quality';
   messages: ReviewMessage[];
   lastDecision: string;
   currentPage: number;
@@ -217,6 +275,10 @@ type FlowState = {
 type ImageItem = {
   id: number;
   sample: string;
+  patient: string;
+  age: number;
+  date: string;
+  imageCount: number;
   type: string;
 };
 
@@ -231,6 +293,11 @@ const stage = ref<FlowState['stage']>('technician');
 const messages = ref<ReviewMessage[]>([]);
 const lastDecision = ref('');
 const currentPage = ref(1);
+const distributionStep = ref<FlowState['distributionStep']>('screening');
+const selectedTaskIds = ref<number[]>([]);
+const activeTaskId = ref<number | null>(null);
+const distributionMessage = ref('');
+const showImagePreview = ref(false);
 const certificateNo = ref('');
 const certificateIssued = ref(false);
 const useSeal = ref(false);
@@ -251,8 +318,12 @@ const docs = [
 
 const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
   id: idx + 1,
-  sample: `样本${String(idx + 1).padStart(3, '0')}`,
-  type: '眼底照片',
+  sample: `病例#${String(idx + 1).padStart(6, '0')}`,
+  patient: `张${String.fromCharCode(65 + (idx % 26))}`,
+  age: 45 + (idx % 25),
+  date: `2026-02-${String((idx % 28) + 1).padStart(2, '0')}`,
+  imageCount: 12 + (idx % 8),
+  type: 'OCT',
 }));
 
 
@@ -261,6 +332,7 @@ const pagedImages = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return imageData.slice(start, start + pageSize);
 });
+const activeTaskDetail = computed(() => imageData.find((item) => item.id === activeTaskId.value) || null);
 
 const projectId = computed(() => String(route.query.projectId || 'XXXXXXXXXX'));
 const flowKey = computed(() => `oct-hardware-flow-${projectId.value}`);
@@ -268,6 +340,16 @@ const stageLabel = computed(() => {
   if (stage.value === 'technician') return '技师认证';
   if (stage.value === 'certificate') return '证书颁发';
   return '硬件认证';
+});
+const pageTitle = computed(() => {
+  if (stage.value === 'technician') return '项目管理-分发影像数据';
+  return `项目管理-${stageLabel.value}`;
+});
+const distributionStepLabel = computed(() => {
+  if (distributionStep.value === 'inspection') return '影像数据检查阶段';
+  if (distributionStep.value === 'reading') return '阅片阶段';
+  if (distributionStep.value === 'quality') return '质量抽查';
+  return '受试者筛选阶段';
 });
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
@@ -309,6 +391,7 @@ function ensureCertificateMeta() {
 function persistState() {
   const payload: FlowState = {
     stage: stage.value,
+    distributionStep: distributionStep.value,
     messages: messages.value,
     lastDecision: lastDecision.value,
     currentPage: currentPage.value,
@@ -321,15 +404,94 @@ function persistState() {
   localStorage.setItem(flowKey.value, JSON.stringify(payload));
 }
 
+function switchDistributionStep(nextStep: FlowState['distributionStep']) {
+  distributionStep.value = nextStep;
+  if (nextStep !== 'inspection') {
+    selectedTaskIds.value = [];
+    activeTaskId.value = null;
+    distributionMessage.value = '';
+  }
+  persistState();
+}
+
 function goToPage(page: number) {
   if (page < 1 || page > imageTotalPages.value) return;
   currentPage.value = page;
   persistState();
 }
 
+function toggleTaskSelection(id: number) {
+  if (selectedTaskIds.value.includes(id)) {
+    selectedTaskIds.value = selectedTaskIds.value.filter((taskId) => taskId !== id);
+    return;
+  }
+  selectedTaskIds.value.push(id);
+}
+
+function showTaskDetail(id: number) {
+  activeTaskId.value = id;
+  formMessage.value = '';
+}
+
+function distributeSelected(mode: 'batch' | 'smart') {
+  if (distributionStep.value !== 'inspection') {
+    distributionMessage.value = '请先进入影像数据检查阶段。';
+    return;
+  }
+  if (!selectedTaskIds.value.length) return;
+  distributionMessage.value = mode === 'batch'
+    ? `已将 ${selectedTaskIds.value.length} 份影像资料批量分发给指定医生。`
+    : `已将 ${selectedTaskIds.value.length} 份影像资料智能分发给适配医生。`;
+  selectedTaskIds.value = [];
+}
+
+function viewFullImage() {
+  if (distributionStep.value !== 'inspection') {
+    formMessage.value = '请先进入影像数据检查阶段。';
+    return;
+  }
+  if (!activeTaskDetail.value) {
+    formMessage.value = '请先选择任务并查看详情。';
+    return;
+  }
+  formMessage.value = `已打开 ${activeTaskDetail.value.sample} 的完整影像。`;
+  showImagePreview.value = true;
+}
+
 function switchStage(nextStage: FlowState['stage']) {
   stage.value = nextStage;
   if (nextStage === 'certificate') ensureCertificateMeta();
+  if (nextStage === 'technician') {
+    distributionStep.value = 'screening';
+  }
+  if (nextStage !== 'technician') {
+    selectedTaskIds.value = [];
+    distributionMessage.value = '';
+    activeTaskId.value = null;
+    showImagePreview.value = false;
+  }
+  persistState();
+}
+
+function stageByTaskName(taskName: string): FlowState['stage'] | null {
+  if (taskName === '认证') return 'hardware';
+  if (taskName === '分发影像数据') return 'technician';
+  if (taskName === '阅片审核') return 'technician';
+  if (taskName === '证书颁发') return 'certificate';
+  return null;
+}
+
+function syncStageByTaskQuery() {
+  const taskName = String(route.query.task || '').trim();
+  const mappedStage = stageByTaskName(taskName);
+  if (!mappedStage) return;
+  switchStage(mappedStage);
+  if (taskName === '分发影像数据') {
+    distributionStep.value = 'screening';
+  }
+  if (taskName === '阅片审核') {
+    distributionStep.value = 'reading';
+  }
   persistState();
 }
 
@@ -426,6 +588,7 @@ onMounted(async () => {
     try {
       const parsed: FlowState = JSON.parse(cached);
       stage.value = parsed.stage;
+      distributionStep.value = parsed.distributionStep || 'screening';
       messages.value = parsed.messages;
       lastDecision.value = parsed.lastDecision;
       currentPage.value = parsed.currentPage || 1;
@@ -444,6 +607,7 @@ onMounted(async () => {
   }
 
   if (stage.value === 'certificate') ensureCertificateMeta();
+  syncStageByTaskQuery();
 
   try {
     const res = await getUser(route.params.id as string, userStore.token);
@@ -453,6 +617,13 @@ onMounted(async () => {
     user.value = null;
   }
 });
+
+watch(
+  () => route.query.task,
+  () => {
+    syncStageByTaskQuery();
+  },
+);
 </script>
 
 <style scoped>
@@ -503,11 +674,20 @@ onMounted(async () => {
 .file-item div { display: grid; gap: 4px; }
 .file-item small { color: #64748b; }
 .file-item button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 6px 12px; }
-.image-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.image-card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc; }
-.thumb { height: 88px; display: grid; place-items: center; font-size: 34px; color: #94a3b8; background: #f1f5f9; }
-.meta { padding: 8px 10px; display: grid; gap: 4px; }
-.meta small { color: #64748b; }
+.distribution-top-steps { margin: 10px 0 14px; display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; color: #475569; }
+.step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
+.step-btn.active { color: #2563eb; font-weight: 600; }
+.task-header { display: flex; justify-content: space-between; align-items: center; }
+.task-actions { display: flex; gap: 10px; }
+.task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.task-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.task-list { display: grid; gap: 10px; }
+.task-card { border: 1px solid #d2dae6; border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+.task-card label { display: flex; align-items: flex-start; gap: 10px; flex: 1; }
+.task-main { display: grid; gap: 3px; }
+.task-main small { color: #64748b; }
+.detail-link { border: none; background: transparent; color: #2563eb; cursor: pointer; }
+.distribution-message { margin: 12px 0 0; color: #166534; }
 .pager { margin-top: 12px; display: flex; justify-content: center; gap: 8px; }
 .pager button { border: 1px solid #cbd5e1; border-radius: 6px; min-width: 32px; height: 32px; background: #fff; color: #334155; cursor: pointer; }
 .pager button:disabled { cursor: not-allowed; opacity: .5; }
@@ -554,13 +734,35 @@ onMounted(async () => {
 .msg-list li p { margin: 6px 0; }
 .msg-list li small { color: #64748b; }
 .empty { color: #64748b; }
+.task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
+.task-detail-panel dt { color: #64748b; }
+.task-detail-panel dd { margin: 0; }
+.stage-placeholder { border: 1px dashed #d2dae6; border-radius: 8px; padding: 14px; color: #334155; display: grid; gap: 10px; }
+.image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+}
+.modal-card {
+  width: min(720px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  padding: 16px;
+}
+.modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+.modal-actions .primary { border: none; border-radius: 8px; padding: 8px 16px; background: #3f8fdb; color: #fff; cursor: pointer; }
 
 @media (max-width: 1100px) {
   .cert-page { flex-direction: column; }
   .sidebar { width: auto; }
   .main-grid { grid-template-columns: 1fr; }
   .detail-box { grid-template-columns: 1fr; }
-  .image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .distribution-top-steps { flex-wrap: wrap; gap: 10px; }
   .certificate-meta { grid-template-columns: 1fr; gap: 10px; }
   .certificate-signature { flex-direction: column; align-items: flex-start; gap: 10px; }
   .controls { flex-direction: column; gap: 6px; }
