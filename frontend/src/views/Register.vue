@@ -41,7 +41,7 @@ function goLogin() {
 async function onRegister() {
   error.value = '';
   try {
-    await register({ username: username.value, password: password.value, email: email.value, gender: gender.value, age: age.value });
+    await register({ username: username.value, password: password.value, email: email.value});
     router.push('/login');
   } catch (e: any) {
     error.value = e.response?.data?.msg || '注册失败';
