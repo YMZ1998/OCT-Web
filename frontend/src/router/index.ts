@@ -5,6 +5,7 @@ import UserInfo from '../views/UserInfo.vue';
 import ProjectManagement from '../views/ProjectManagement.vue';
 import HardwareCertification from '../views/Certification.vue';
 import ImageDistribution from '../views/ImageDistribution.vue';
+import ReadingReview from '../views/ReadingReview.vue';
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', redirect: '/login' },
@@ -13,6 +14,7 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/user/:id', component: UserInfo },
   { path: '/projects/:id', component: ProjectManagement },
   { path: '/projects/:id/distribution', component: ImageDistribution },
+  { path: '/projects/:id/review', component: ReadingReview },
   { path: '/projects/:id/hardware', component: HardwareCertification },
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ];
