@@ -3,7 +3,7 @@ import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import UserInfo from '../views/UserInfo.vue';
 import ProjectManagement from '../views/ProjectManagement.vue';
-import HardwareCertification from '../views/HardwareCertification.vue';
+import HardwareCertification from '../views/Certification.vue';
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', redirect: '/login' },

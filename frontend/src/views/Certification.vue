@@ -57,11 +57,6 @@
       </section>
 
 
-      <section v-if="stage === 'technician'" class="distribution-top-steps">
-        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">技师认证</button>
-        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">分发影像数据</button>
-        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片审核</button>
-      </section>
 
       <section class="main-grid">
         <div class="panel detail-panel">
@@ -266,14 +261,7 @@ const stageLabel = computed(() => {
   if (stage.value === 'certificate') return '证书颁发';
   return '硬件认证';
 });
-const pageTitle = computed(() => {
-  if (stage.value === 'technician') {
-    if (distributionStep.value === 'inspection') return '项目管理-分发影像数据';
-    if (distributionStep.value === 'reading') return '项目管理-阅片审核';
-    return '项目管理-技师认证';
-  }
-  return `项目管理-${stageLabel.value}`;
-});
+const pageTitle = '项目管理-认证';
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
   if (stage.value === 'hardware') return '医生在查看硬件详情后请输入审核意见';
