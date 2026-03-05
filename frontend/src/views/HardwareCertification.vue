@@ -58,7 +58,11 @@
 
       <section v-else class="distribution-top-steps">
         <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
-        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
+        <button
+          :class="['step-btn', distributionStep === 'inspection' ? 'active' : '', 'disabled']"
+          disabled
+          title="请在受试者筛选阶段内点击“进入影像数据检查阶段”"
+        >影像数据检查阶段</button>
         <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
         <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
       </section>
@@ -513,6 +517,28 @@ function syncStageByTaskQuery() {
   const mappedStage = stageByTaskName(taskName);
   if (!mappedStage) return;
   switchStage(mappedStage);
+  if (taskName === '分发影像数据') {
+    distributionStep.value = 'screening';
+  }
+  if (taskName === '阅片审核') {
+    distributionStep.value = 'reading';
+  }
+  persistState();
+}
+
+function stageByTaskName(taskName: string): FlowState['stage'] | null {
+  if (taskName === '认证') return 'hardware';
+  if (taskName === '分发影像数据') return 'technician';
+  if (taskName === '阅片审核') return 'technician';
+  if (taskName === '证书颁发') return 'certificate';
+  return null;
+}
+
+function syncStageByTaskQuery() {
+  const taskName = String(route.query.task || '').trim();
+  const mappedStage = stageByTaskName(taskName);
+  if (!mappedStage) return;
+  switchStage(mappedStage);
 }
 
 function sendToTechnicianAccount(result: ReviewMessage['result'], content: string) {
@@ -697,6 +723,7 @@ watch(
 .distribution-top-steps { margin: 10px 0 14px; display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; color: #475569; }
 .step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
 .step-btn.active { color: #2563eb; font-weight: 600; }
+.step-btn.disabled { cursor: not-allowed; opacity: .55; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
