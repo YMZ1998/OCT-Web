@@ -35,13 +35,13 @@
 
     <main class="content">
       <header class="topbar">
-        <h1>项目管理-{{ stageLabel }}</h1>
+        <h1>{{ pageTitle }}</h1>
         <div class="user-box">
           <span>👤 {{ user?.username }}</span>
         </div>
       </header>
 
-      <section class="tabs">
+      <section class="tabs" v-if="stage !== 'technician'">
         <button :class="tabClass('hardware')" @click="switchStage('hardware')">
           <span class="tab-icon">🧩</span>
           <span>硬件认证</span>
@@ -54,6 +54,13 @@
           <span class="tab-icon">🏅</span>
           <span>证书颁发</span>
         </button>
+      </section>
+
+      <section v-else class="distribution-top-steps">
+        <span class="active">受试者筛选阶段</span>
+        <span>影像数据检查阶段</span>
+        <span>阅片阶段</span>
+        <span>质量抽查</span>
       </section>
 
       <section class="main-grid">
@@ -79,14 +86,6 @@
           </template>
 
           <template v-else-if="stage === 'technician'">
-            <h3>项目管理-分发影像数据</h3>
-            <div class="distribution-steps">
-              <span class="active">受试者筛选阶段</span>
-              <span>影像数据检查阶段</span>
-              <span>阅片阶段</span>
-              <span>质量抽查</span>
-            </div>
-
             <section class="task-header">
               <p class="sub">任务列表</p>
               <div class="task-actions">
@@ -316,6 +315,10 @@ const stageLabel = computed(() => {
   if (stage.value === 'technician') return '技师认证';
   if (stage.value === 'certificate') return '证书颁发';
   return '硬件认证';
+});
+const pageTitle = computed(() => {
+  if (stage.value === 'technician') return '项目管理-分发影像数据';
+  return `项目管理-${stageLabel.value}`;
 });
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
@@ -608,9 +611,9 @@ watch(
 .file-item div { display: grid; gap: 4px; }
 .file-item small { color: #64748b; }
 .file-item button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 6px 12px; }
-.distribution-steps { display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; margin-bottom: 12px; color: #475569; }
-.distribution-steps span { position: relative; }
-.distribution-steps span.active { color: #2563eb; font-weight: 600; }
+.distribution-top-steps { margin: 10px 0 14px; display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; color: #475569; }
+.distribution-top-steps span { position: relative; }
+.distribution-top-steps span.active { color: #2563eb; font-weight: 600; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
@@ -677,7 +680,7 @@ watch(
   .sidebar { width: auto; }
   .main-grid { grid-template-columns: 1fr; }
   .detail-box { grid-template-columns: 1fr; }
-  .distribution-steps { flex-wrap: wrap; gap: 10px; }
+  .distribution-top-steps { flex-wrap: wrap; gap: 10px; }
   .certificate-meta { grid-template-columns: 1fr; gap: 10px; }
   .certificate-signature { flex-direction: column; align-items: flex-start; gap: 10px; }
   .controls { flex-direction: column; gap: 6px; }
