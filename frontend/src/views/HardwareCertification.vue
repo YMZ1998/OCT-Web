@@ -226,7 +226,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser } from '../api/user';
 import { useUserStore } from '../store/user';
@@ -415,6 +415,21 @@ function switchStage(nextStage: FlowState['stage']) {
   persistState();
 }
 
+function stageByTaskName(taskName: string): FlowState['stage'] | null {
+  if (taskName === '认证') return 'hardware';
+  if (taskName === '分发影像数据') return 'technician';
+  if (taskName === '阅片审核') return 'technician';
+  if (taskName === '证书颁发') return 'certificate';
+  return null;
+}
+
+function syncStageByTaskQuery() {
+  const taskName = String(route.query.task || '').trim();
+  const mappedStage = stageByTaskName(taskName);
+  if (!mappedStage) return;
+  switchStage(mappedStage);
+}
+
 function sendToTechnicianAccount(result: ReviewMessage['result'], content: string) {
   messages.value.unshift({
     result,
@@ -526,6 +541,7 @@ onMounted(async () => {
   }
 
   if (stage.value === 'certificate') ensureCertificateMeta();
+  syncStageByTaskQuery();
 
   try {
     const res = await getUser(route.params.id as string, userStore.token);
@@ -535,6 +551,13 @@ onMounted(async () => {
     user.value = null;
   }
 });
+
+watch(
+  () => route.query.task,
+  () => {
+    syncStageByTaskQuery();
+  },
+);
 </script>
 
 <style scoped>
