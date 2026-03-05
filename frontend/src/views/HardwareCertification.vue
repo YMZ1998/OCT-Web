@@ -85,7 +85,7 @@
             </div>
           </template>
 
-          <template v-else-if="stage === 'technician' && distributionStep === 'inspection'">
+          <template v-else-if="stage === 'technician' && ['screening', 'inspection'].includes(distributionStep)">
             <section class="task-header">
               <p class="sub">任务列表</p>
               <div class="task-actions">
@@ -215,7 +215,7 @@
 
         <div class="panel task-detail-panel" v-else>
           <h3>任务详情</h3>
-          <template v-if="distributionStep === 'inspection' && activeTaskDetail">
+          <template v-if="['screening', 'inspection'].includes(distributionStep) && activeTaskDetail">
             <dl>
               <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
               <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
@@ -226,7 +226,7 @@
             </dl>
             <button class="notify" @click="viewFullImage">查看完整影像</button>
           </template>
-          <p v-else-if="distributionStep !== 'inspection'" class="empty">请先进入“影像数据检查阶段”，再查看任务详情。</p>
+          <p v-else-if="!['screening', 'inspection'].includes(distributionStep)" class="empty">请先进入“受试者筛选阶段”或“影像数据检查阶段”，再查看任务详情。</p>
           <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
           <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
         </div>
@@ -434,8 +434,8 @@ function showTaskDetail(id: number) {
 }
 
 function distributeSelected(mode: 'batch' | 'smart') {
-  if (distributionStep.value !== 'inspection') {
-    distributionMessage.value = '请先进入影像数据检查阶段。';
+  if (!['screening', 'inspection'].includes(distributionStep.value)) {
+    distributionMessage.value = '请先进入受试者筛选阶段或影像数据检查阶段。';
     return;
   }
   if (!selectedTaskIds.value.length) return;
@@ -446,8 +446,8 @@ function distributeSelected(mode: 'batch' | 'smart') {
 }
 
 function viewFullImage() {
-  if (distributionStep.value !== 'inspection') {
-    formMessage.value = '请先进入影像数据检查阶段。';
+  if (!['screening', 'inspection'].includes(distributionStep.value)) {
+    formMessage.value = '请先进入受试者筛选阶段或影像数据检查阶段。';
     return;
   }
   if (!activeTaskDetail.value) {
