@@ -57,10 +57,10 @@
       </section>
 
       <section v-else class="distribution-top-steps">
-        <span class="active">受试者筛选阶段</span>
-        <span>影像数据检查阶段</span>
-        <span>阅片阶段</span>
-        <span>质量抽查</span>
+        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
+        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
+        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
+        <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
       </section>
 
       <section class="main-grid">
@@ -85,7 +85,7 @@
             </div>
           </template>
 
-          <template v-else-if="stage === 'technician'">
+          <template v-else-if="stage === 'technician' && distributionStep === 'inspection'">
             <section class="task-header">
               <p class="sub">任务列表</p>
               <div class="task-actions">
@@ -121,6 +121,21 @@
                 {{ page }}
               </button>
               <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
+            </div>
+          </template>
+
+          <template v-else-if="stage === 'technician'">
+            <h3>影像分发</h3>
+            <p class="sub">当前阶段：{{ distributionStepLabel }}</p>
+            <div class="stage-placeholder">
+              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，请完成受试者筛选后点击“影像数据检查阶段”。</p>
+              <p v-else-if="distributionStep === 'reading'">当前为阅片阶段，影像将进入医生阅片审核流程。</p>
+              <p v-else>当前为质量抽查阶段，可对已分发影像进行质量追踪。</p>
+              <button
+                v-if="distributionStep === 'screening'"
+                class="stage-next"
+                @click="switchDistributionStep('inspection')"
+              >进入影像数据检查阶段</button>
             </div>
           </template>
 
@@ -205,7 +220,7 @@
 
         <div class="panel task-detail-panel" v-else>
           <h3>任务详情</h3>
-          <template v-if="activeTaskDetail">
+          <template v-if="distributionStep === 'inspection' && activeTaskDetail">
             <dl>
               <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
               <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
@@ -216,11 +231,23 @@
             </dl>
             <button class="notify" @click="viewFullImage">查看完整影像</button>
           </template>
+          <p v-else-if="distributionStep !== 'inspection'" class="empty">请先进入“影像数据检查阶段”，再查看任务详情。</p>
           <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
           <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
         </div>
       </section>
     </main>
+
+    <div v-if="showImagePreview && activeTaskDetail" class="modal-mask" @click.self="showImagePreview = false">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="image-preview-title">
+        <h3 id="image-preview-title">完整影像预览</h3>
+        <p class="sub">{{ activeTaskDetail.sample }} · {{ activeTaskDetail.type }}</p>
+        <div class="image-preview">{{ activeTaskDetail.sample }} 影像图</div>
+        <div class="modal-actions">
+          <button class="primary" @click="showImagePreview = false">关闭</button>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -239,6 +266,7 @@ type ReviewMessage = {
 
 type FlowState = {
   stage: 'hardware' | 'technician' | 'certificate';
+  distributionStep: 'screening' | 'inspection' | 'reading' | 'quality';
   messages: ReviewMessage[];
   lastDecision: string;
   currentPage: number;
@@ -270,9 +298,11 @@ const stage = ref<FlowState['stage']>('technician');
 const messages = ref<ReviewMessage[]>([]);
 const lastDecision = ref('');
 const currentPage = ref(1);
+const distributionStep = ref<FlowState['distributionStep']>('screening');
 const selectedTaskIds = ref<number[]>([]);
 const activeTaskId = ref<number | null>(null);
 const distributionMessage = ref('');
+const showImagePreview = ref(false);
 const certificateNo = ref('');
 const certificateIssued = ref(false);
 const useSeal = ref(false);
@@ -320,6 +350,12 @@ const pageTitle = computed(() => {
   if (stage.value === 'technician') return '项目管理-分发影像数据';
   return `项目管理-${stageLabel.value}`;
 });
+const distributionStepLabel = computed(() => {
+  if (distributionStep.value === 'inspection') return '影像数据检查阶段';
+  if (distributionStep.value === 'reading') return '阅片阶段';
+  if (distributionStep.value === 'quality') return '质量抽查';
+  return '受试者筛选阶段';
+});
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
   if (stage.value === 'hardware') return '医生在查看硬件详情后请输入审核意见';
@@ -360,6 +396,7 @@ function ensureCertificateMeta() {
 function persistState() {
   const payload: FlowState = {
     stage: stage.value,
+    distributionStep: distributionStep.value,
     messages: messages.value,
     lastDecision: lastDecision.value,
     currentPage: currentPage.value,
@@ -370,6 +407,16 @@ function persistState() {
     passedStages: passedStages.value,
   };
   localStorage.setItem(flowKey.value, JSON.stringify(payload));
+}
+
+function switchDistributionStep(nextStep: FlowState['distributionStep']) {
+  distributionStep.value = nextStep;
+  if (nextStep !== 'inspection') {
+    selectedTaskIds.value = [];
+    activeTaskId.value = null;
+    distributionMessage.value = '';
+  }
+  persistState();
 }
 
 function goToPage(page: number) {
@@ -392,6 +439,10 @@ function showTaskDetail(id: number) {
 }
 
 function distributeSelected(mode: 'batch' | 'smart') {
+  if (distributionStep.value !== 'inspection') {
+    distributionMessage.value = '请先进入影像数据检查阶段。';
+    return;
+  }
   if (!selectedTaskIds.value.length) return;
   distributionMessage.value = mode === 'batch'
     ? `已将 ${selectedTaskIds.value.length} 份影像资料批量分发给指定医生。`
@@ -400,20 +451,51 @@ function distributeSelected(mode: 'batch' | 'smart') {
 }
 
 function viewFullImage() {
+  if (distributionStep.value !== 'inspection') {
+    formMessage.value = '请先进入影像数据检查阶段。';
+    return;
+  }
   if (!activeTaskDetail.value) {
     formMessage.value = '请先选择任务并查看详情。';
     return;
   }
   formMessage.value = `已打开 ${activeTaskDetail.value.sample} 的完整影像。`;
+  showImagePreview.value = true;
 }
 
 function switchStage(nextStage: FlowState['stage']) {
   stage.value = nextStage;
   if (nextStage === 'certificate') ensureCertificateMeta();
+  if (nextStage === 'technician') {
+    distributionStep.value = 'screening';
+  }
   if (nextStage !== 'technician') {
     selectedTaskIds.value = [];
     distributionMessage.value = '';
     activeTaskId.value = null;
+    showImagePreview.value = false;
+  }
+  persistState();
+}
+
+function stageByTaskName(taskName: string): FlowState['stage'] | null {
+  if (taskName === '认证') return 'hardware';
+  if (taskName === '分发影像数据') return 'technician';
+  if (taskName === '阅片审核') return 'technician';
+  if (taskName === '证书颁发') return 'certificate';
+  return null;
+}
+
+function syncStageByTaskQuery() {
+  const taskName = String(route.query.task || '').trim();
+  const mappedStage = stageByTaskName(taskName);
+  if (!mappedStage) return;
+  switchStage(mappedStage);
+  if (taskName === '分发影像数据') {
+    distributionStep.value = 'screening';
+  }
+  if (taskName === '阅片审核') {
+    distributionStep.value = 'reading';
   }
   persistState();
 }
@@ -526,6 +608,7 @@ onMounted(async () => {
     try {
       const parsed: FlowState = JSON.parse(cached);
       stage.value = parsed.stage;
+      distributionStep.value = parsed.distributionStep || 'screening';
       messages.value = parsed.messages;
       lastDecision.value = parsed.lastDecision;
       currentPage.value = parsed.currentPage || 1;
@@ -612,8 +695,8 @@ watch(
 .file-item small { color: #64748b; }
 .file-item button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 6px 12px; }
 .distribution-top-steps { margin: 10px 0 14px; display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; color: #475569; }
-.distribution-top-steps span { position: relative; }
-.distribution-top-steps span.active { color: #2563eb; font-weight: 600; }
+.step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
+.step-btn.active { color: #2563eb; font-weight: 600; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
@@ -674,6 +757,26 @@ watch(
 .task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
 .task-detail-panel dt { color: #64748b; }
 .task-detail-panel dd { margin: 0; }
+.stage-placeholder { border: 1px dashed #d2dae6; border-radius: 8px; padding: 14px; color: #334155; display: grid; gap: 10px; }
+.stage-next { border: 1px solid #c8d7ff; background: #edf3ff; color: #1f3b8f; border-radius: 8px; padding: 8px 12px; cursor: pointer; width: fit-content; }
+.image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+}
+.modal-card {
+  width: min(720px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  padding: 16px;
+}
+.modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+.modal-actions .primary { border: none; border-radius: 8px; padding: 8px 16px; background: #3f8fdb; color: #fff; cursor: pointer; }
 
 @media (max-width: 1100px) {
   .cert-page { flex-direction: column; }
