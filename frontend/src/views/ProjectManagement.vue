@@ -305,7 +305,7 @@ function openDetailModal(project: ProjectItem) {
 }
 
 function openCertification(item: TodoItem) {
-  router.push(`/projects/${route.params.id}/hardware?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
+  router.push(`/projects/${route.params.id}/distribution?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
 }
 
 onMounted(async () => {
