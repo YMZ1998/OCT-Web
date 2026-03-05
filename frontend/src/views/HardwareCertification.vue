@@ -58,11 +58,7 @@
 
       <section v-else class="distribution-top-steps">
         <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
-        <button
-          :class="['step-btn', distributionStep === 'inspection' ? 'active' : '', 'disabled']"
-          disabled
-          title="请在受试者筛选阶段内点击“进入影像数据检查阶段”"
-        >影像数据检查阶段</button>
+        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
         <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
         <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
       </section>
@@ -132,14 +128,9 @@
             <h3>影像分发</h3>
             <p class="sub">当前阶段：{{ distributionStepLabel }}</p>
             <div class="stage-placeholder">
-              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，请完成受试者筛选后点击“影像数据检查阶段”。</p>
+              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，可在顶部自由切换到“影像数据检查阶段”。</p>
               <p v-else-if="distributionStep === 'reading'">当前为阅片阶段，影像将进入医生阅片审核流程。</p>
               <p v-else>当前为质量抽查阶段，可对已分发影像进行质量追踪。</p>
-              <button
-                v-if="distributionStep === 'screening'"
-                class="stage-next"
-                @click="switchDistributionStep('inspection')"
-              >进入影像数据检查阶段</button>
             </div>
           </template>
 
@@ -517,28 +508,6 @@ function syncStageByTaskQuery() {
   const mappedStage = stageByTaskName(taskName);
   if (!mappedStage) return;
   switchStage(mappedStage);
-  if (taskName === '分发影像数据') {
-    distributionStep.value = 'screening';
-  }
-  if (taskName === '阅片审核') {
-    distributionStep.value = 'reading';
-  }
-  persistState();
-}
-
-function stageByTaskName(taskName: string): FlowState['stage'] | null {
-  if (taskName === '认证') return 'hardware';
-  if (taskName === '分发影像数据') return 'technician';
-  if (taskName === '阅片审核') return 'technician';
-  if (taskName === '证书颁发') return 'certificate';
-  return null;
-}
-
-function syncStageByTaskQuery() {
-  const taskName = String(route.query.task || '').trim();
-  const mappedStage = stageByTaskName(taskName);
-  if (!mappedStage) return;
-  switchStage(mappedStage);
 }
 
 function sendToTechnicianAccount(result: ReviewMessage['result'], content: string) {
@@ -723,7 +692,6 @@ watch(
 .distribution-top-steps { margin: 10px 0 14px; display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; color: #475569; }
 .step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
 .step-btn.active { color: #2563eb; font-weight: 600; }
-.step-btn.disabled { cursor: not-allowed; opacity: .55; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
@@ -785,7 +753,6 @@ watch(
 .task-detail-panel dt { color: #64748b; }
 .task-detail-panel dd { margin: 0; }
 .stage-placeholder { border: 1px dashed #d2dae6; border-radius: 8px; padding: 14px; color: #334155; display: grid; gap: 10px; }
-.stage-next { border: 1px solid #c8d7ff; background: #edf3ff; color: #1f3b8f; border-radius: 8px; padding: 8px 12px; cursor: pointer; width: fit-content; }
 .image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
 .modal-mask {
   position: fixed;
