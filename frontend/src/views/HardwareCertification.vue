@@ -689,6 +689,18 @@ watch(
 .task-main { display: grid; gap: 3px; }
 .task-main small { color: #64748b; }
 .detail-link { border: none; background: transparent; color: #2563eb; cursor: pointer; }
+.task-card-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.task-detail-panel { display: grid; gap: 12px; align-content: start; }
+.reading-preview-card, .task-progress-card, .report-card, .manager-review-card { border: 1px solid #dbe3ef; border-radius: 8px; padding: 10px; background: #fff; }
+.reading-preview-card header, .report-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.task-progress-card h4, .report-card h4, .manager-review-card h4 { margin: 0 0 8px; }
+.progress-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: #334155; }
+.progress-track { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.progress-track span { display: block; height: 100%; background: #3f8fdb; }
+.task-progress-card ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.task-progress-card li { display: flex; justify-content: space-between; gap: 12px; }
+.task-progress-card li small { color: #64748b; }
+.manager-review-card textarea { width: 100%; min-height: 100px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; resize: vertical; }
 .distribution-message { margin: 12px 0 0; color: #166534; }
 .pager { margin-top: 12px; display: flex; justify-content: center; gap: 8px; }
 .pager button { border: 1px solid #cbd5e1; border-radius: 6px; min-width: 32px; height: 32px; background: #fff; color: #334155; cursor: pointer; }
