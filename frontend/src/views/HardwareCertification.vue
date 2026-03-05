@@ -79,18 +79,37 @@
           </template>
 
           <template v-else-if="stage === 'technician'">
-            <h3>影像查看数据</h3>
-            <p class="sub">已导入影像数据，医生可查看后撰写审核意见</p>
+            <h3>项目管理-分发影像数据</h3>
+            <div class="distribution-steps">
+              <span class="active">受试者筛选阶段</span>
+              <span>影像数据检查阶段</span>
+              <span>阅片阶段</span>
+              <span>质量抽查</span>
+            </div>
 
-            <div class="image-grid">
-              <article class="image-card" v-for="item in pagedImages" :key="item.id">
-                <div class="thumb">🖼️</div>
-                <div class="meta">
-                  <strong>{{ item.sample }}</strong>
-                  <small>{{ item.type }}</small>
-                </div>
+            <section class="task-header">
+              <p class="sub">任务列表</p>
+              <div class="task-actions">
+                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
+                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
+              </div>
+            </section>
+
+            <div class="task-list">
+              <article class="task-card" v-for="item in pagedImages" :key="item.id">
+                <label>
+                  <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
+                  <div class="task-main">
+                    <strong>{{ item.sample }}</strong>
+                    <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
+                    <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
+                  </div>
+                </label>
+                <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
               </article>
             </div>
+
+            <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
 
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
@@ -156,7 +175,7 @@
           </template>
         </div>
 
-        <div class="panel opinion-panel">
+        <div class="panel opinion-panel" v-if="stage !== 'technician'">
           <h3>审核意见</h3>
           <textarea v-model.trim="opinion" :placeholder="opinionPlaceholder"></textarea>
 
@@ -183,6 +202,23 @@
             </ul>
             <p v-if="!messages.length" class="empty">暂无通知记录</p>
           </div>
+        </div>
+
+        <div class="panel task-detail-panel" v-else>
+          <h3>任务详情</h3>
+          <template v-if="activeTaskDetail">
+            <dl>
+              <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
+              <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
+              <dt>年龄</dt><dd>{{ activeTaskDetail.age }} 岁</dd>
+              <dt>检查类型</dt><dd>{{ activeTaskDetail.type }}</dd>
+              <dt>采集时间</dt><dd>{{ activeTaskDetail.date }}</dd>
+              <dt>影像数量</dt><dd>{{ activeTaskDetail.imageCount }} 张</dd>
+            </dl>
+            <button class="notify" @click="viewFullImage">查看完整影像</button>
+          </template>
+          <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
+          <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
         </div>
       </section>
     </main>
@@ -217,6 +253,10 @@ type FlowState = {
 type ImageItem = {
   id: number;
   sample: string;
+  patient: string;
+  age: number;
+  date: string;
+  imageCount: number;
   type: string;
 };
 
@@ -231,6 +271,9 @@ const stage = ref<FlowState['stage']>('technician');
 const messages = ref<ReviewMessage[]>([]);
 const lastDecision = ref('');
 const currentPage = ref(1);
+const selectedTaskIds = ref<number[]>([]);
+const activeTaskId = ref<number | null>(null);
+const distributionMessage = ref('');
 const certificateNo = ref('');
 const certificateIssued = ref(false);
 const useSeal = ref(false);
@@ -251,8 +294,12 @@ const docs = [
 
 const imageData: ImageItem[] = Array.from({ length: 36 }, (_, idx) => ({
   id: idx + 1,
-  sample: `样本${String(idx + 1).padStart(3, '0')}`,
-  type: '眼底照片',
+  sample: `病例#${String(idx + 1).padStart(6, '0')}`,
+  patient: `张${String.fromCharCode(65 + (idx % 26))}`,
+  age: 45 + (idx % 25),
+  date: `2026-02-${String((idx % 28) + 1).padStart(2, '0')}`,
+  imageCount: 12 + (idx % 8),
+  type: 'OCT',
 }));
 
 
@@ -261,6 +308,7 @@ const pagedImages = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return imageData.slice(start, start + pageSize);
 });
+const activeTaskDetail = computed(() => imageData.find((item) => item.id === activeTaskId.value) || null);
 
 const projectId = computed(() => String(route.query.projectId || 'XXXXXXXXXX'));
 const flowKey = computed(() => `oct-hardware-flow-${projectId.value}`);
@@ -327,9 +375,43 @@ function goToPage(page: number) {
   persistState();
 }
 
+function toggleTaskSelection(id: number) {
+  if (selectedTaskIds.value.includes(id)) {
+    selectedTaskIds.value = selectedTaskIds.value.filter((taskId) => taskId !== id);
+    return;
+  }
+  selectedTaskIds.value.push(id);
+}
+
+function showTaskDetail(id: number) {
+  activeTaskId.value = id;
+  formMessage.value = '';
+}
+
+function distributeSelected(mode: 'batch' | 'smart') {
+  if (!selectedTaskIds.value.length) return;
+  distributionMessage.value = mode === 'batch'
+    ? `已将 ${selectedTaskIds.value.length} 份影像资料批量分发给指定医生。`
+    : `已将 ${selectedTaskIds.value.length} 份影像资料智能分发给适配医生。`;
+  selectedTaskIds.value = [];
+}
+
+function viewFullImage() {
+  if (!activeTaskDetail.value) {
+    formMessage.value = '请先选择任务并查看详情。';
+    return;
+  }
+  formMessage.value = `已打开 ${activeTaskDetail.value.sample} 的完整影像。`;
+}
+
 function switchStage(nextStage: FlowState['stage']) {
   stage.value = nextStage;
   if (nextStage === 'certificate') ensureCertificateMeta();
+  if (nextStage !== 'technician') {
+    selectedTaskIds.value = [];
+    distributionMessage.value = '';
+    activeTaskId.value = null;
+  }
   persistState();
 }
 
@@ -503,11 +585,20 @@ onMounted(async () => {
 .file-item div { display: grid; gap: 4px; }
 .file-item small { color: #64748b; }
 .file-item button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 6px 12px; }
-.image-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.image-card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc; }
-.thumb { height: 88px; display: grid; place-items: center; font-size: 34px; color: #94a3b8; background: #f1f5f9; }
-.meta { padding: 8px 10px; display: grid; gap: 4px; }
-.meta small { color: #64748b; }
+.distribution-steps { display: flex; gap: 20px; border-bottom: 1px solid #d2dae6; padding: 4px 0 10px; margin-bottom: 12px; color: #475569; }
+.distribution-steps span { position: relative; }
+.distribution-steps span.active { color: #2563eb; font-weight: 600; }
+.task-header { display: flex; justify-content: space-between; align-items: center; }
+.task-actions { display: flex; gap: 10px; }
+.task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.task-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.task-list { display: grid; gap: 10px; }
+.task-card { border: 1px solid #d2dae6; border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+.task-card label { display: flex; align-items: flex-start; gap: 10px; flex: 1; }
+.task-main { display: grid; gap: 3px; }
+.task-main small { color: #64748b; }
+.detail-link { border: none; background: transparent; color: #2563eb; cursor: pointer; }
+.distribution-message { margin: 12px 0 0; color: #166534; }
 .pager { margin-top: 12px; display: flex; justify-content: center; gap: 8px; }
 .pager button { border: 1px solid #cbd5e1; border-radius: 6px; min-width: 32px; height: 32px; background: #fff; color: #334155; cursor: pointer; }
 .pager button:disabled { cursor: not-allowed; opacity: .5; }
@@ -554,13 +645,16 @@ onMounted(async () => {
 .msg-list li p { margin: 6px 0; }
 .msg-list li small { color: #64748b; }
 .empty { color: #64748b; }
+.task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
+.task-detail-panel dt { color: #64748b; }
+.task-detail-panel dd { margin: 0; }
 
 @media (max-width: 1100px) {
   .cert-page { flex-direction: column; }
   .sidebar { width: auto; }
   .main-grid { grid-template-columns: 1fr; }
   .detail-box { grid-template-columns: 1fr; }
-  .image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .distribution-steps { flex-wrap: wrap; gap: 10px; }
   .certificate-meta { grid-template-columns: 1fr; gap: 10px; }
   .certificate-signature { flex-direction: column; align-items: flex-start; gap: 10px; }
   .controls { flex-direction: column; gap: 6px; }
