@@ -56,13 +56,6 @@
         </button>
       </section>
 
-      <section v-if="stage === 'technician'" class="distribution-top-steps">
-        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
-        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
-        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
-        <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
-      </section>
-
       <section class="main-grid">
         <div class="panel detail-panel">
           <template v-if="stage === 'hardware'">
@@ -86,51 +79,25 @@
           </template>
 
           <template v-else-if="stage === 'technician'">
-            <template v-if="distributionStep === 'reading'">
-              <section class="task-header">
-                <p class="sub">阅片任务列表</p>
-              </section>
+            <section class="task-header">
+              <p class="sub">影像任务</p>
+            </section>
 
-              <div class="task-list">
-                <article class="task-card" v-for="item in pagedImages" :key="item.id">
-                  <div class="task-main">
-                    <strong>{{ item.sample }}</strong>
-                    <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
-                    <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
-                  </div>
-                  <div class="task-card-actions">
-                    <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
-                    <button class="detail-link" @click="viewFullReport(item.id)">查看完整报告</button>
-                  </div>
-                </article>
-              </div>
-            </template>
-
-            <template v-else>
-              <section class="task-header">
-                <p class="sub">任务列表</p>
-                <div class="task-actions">
-                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
-                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
+            <div class="tech-grid">
+              <article
+                class="tech-card"
+                v-for="item in pagedImages"
+                :key="item.id"
+                :class="{ active: activeTaskId === item.id }"
+                @click="showTaskDetail(item.id)"
+              >
+                <div class="tech-thumb">🖼️</div>
+                <div class="tech-meta">
+                  <strong>{{ item.sample }}</strong>
+                  <small>眼底照片</small>
                 </div>
-              </section>
-
-              <div class="task-list">
-                <article class="task-card" v-for="item in pagedImages" :key="item.id">
-                  <label>
-                    <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
-                    <div class="task-main">
-                      <strong>{{ item.sample }}</strong>
-                      <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
-                      <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
-                    </div>
-                  </label>
-                  <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
-                </article>
-              </div>
-
-              <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
-            </template>
+              </article>
+            </div>
 
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
@@ -196,7 +163,7 @@
           </template>
         </div>
 
-        <div class="panel opinion-panel" v-if="stage !== 'technician'">
+        <div class="panel opinion-panel">
           <h3>审核意见</h3>
           <textarea v-model.trim="opinion" :placeholder="opinionPlaceholder"></textarea>
 
@@ -223,77 +190,6 @@
             </ul>
             <p v-if="!messages.length" class="empty">暂无通知记录</p>
           </div>
-        </div>
-
-        <div class="panel task-detail-panel" v-else>
-          <template v-if="distributionStep === 'reading'">
-            <h3>阅片审核</h3>
-            <template v-if="activeTaskDetail">
-              <section class="reading-preview-card">
-                <header>
-                  <strong>{{ activeTaskDetail.sample }} 影像图</strong>
-                  <button class="detail-link" @click="viewFullImage">查看完整影像</button>
-                </header>
-                <div class="image-preview">{{ activeTaskDetail.sample }} 影像图</div>
-              </section>
-
-              <section class="task-progress-card">
-                <h4>任务进程</h4>
-                <div class="progress-row">
-                  <span>完成度</span>
-                  <strong>{{ activeTaskProgress.percent }}%</strong>
-                </div>
-                <div class="progress-track"><span :style="{ width: `${activeTaskProgress.percent}%` }"></span></div>
-                <ul>
-                  <li v-for="node in activeTaskProgress.flow" :key="node.label">
-                    <strong>{{ node.label }}</strong>
-                    <small>{{ node.time }}</small>
-                  </li>
-                </ul>
-              </section>
-
-              <section class="report-card">
-                <header>
-                  <h4>报告详情</h4>
-                  <button class="detail-link" @click="showFullReport = !showFullReport">{{ showFullReport ? '收起报告' : '查看完整报告' }}</button>
-                </header>
-                <template v-if="showFullReport">
-                  <p><strong>初级读片师意见：</strong>{{ activeTaskReport.junior }}</p>
-                  <p><strong>主管读片师报告：</strong>{{ activeTaskReport.seniorReport }}</p>
-                  <p><strong>主管读片师意见：</strong>{{ activeTaskReport.seniorOpinion }}</p>
-                </template>
-                <p v-else class="empty">点击“查看完整报告”后可查看初级读片师和主管读片师报告内容。</p>
-              </section>
-
-              <section class="manager-review-card">
-                <h4>报告意见</h4>
-                <textarea v-model.trim="managerOpinion" placeholder="请输入项目经理对读片报告的意见"></textarea>
-                <div class="action-row">
-                  <button class="success" @click="submitReadingDecision(true)">通过</button>
-                  <button class="danger" @click="submitReadingDecision(false)">不通过</button>
-                </div>
-              </section>
-            </template>
-            <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
-          </template>
-
-          <template v-else>
-            <h3>任务详情</h3>
-            <template v-if="activeTaskDetail">
-              <dl>
-                <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
-                <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
-                <dt>年龄</dt><dd>{{ activeTaskDetail.age }} 岁</dd>
-                <dt>检查类型</dt><dd>{{ activeTaskDetail.type }}</dd>
-                <dt>采集时间</dt><dd>{{ activeTaskDetail.date }}</dd>
-                <dt>影像数量</dt><dd>{{ activeTaskDetail.imageCount }} 张</dd>
-              </dl>
-              <button class="notify" @click="viewFullImage">查看完整影像</button>
-            </template>
-            <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
-          </template>
-
-          <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
         </div>
       </section>
 
@@ -431,12 +327,7 @@ const stageLabel = computed(() => {
   return '硬件认证';
 });
 const pageTitle = computed(() => {
-  if (stage.value === 'technician') {
-    if (distributionStep.value === 'reading') return '项目管理-阅片审核';
-    if (distributionStep.value === 'quality') return '项目管理-质量抽查';
-    if (distributionStep.value === 'screening') return '项目管理-受试者筛选';
-    return '项目管理-分发影像数据';
-  }
+  if (stage.value === 'technician') return '项目管理-技师认证';
   return `项目管理-${stageLabel.value}`;
 });
 const opinionPlaceholder = computed(() => {
@@ -661,20 +552,25 @@ function syncStageByTaskQuery() {
   if (!task) return;
 
   if (task.includes('认证')) {
+    stage.value = 'technician';
+    distributionStep.value = 'screening';
+    return;
+  }
+
+  if (task.includes('分发') || task.includes('检查')) {
     stage.value = 'hardware';
+    distributionStep.value = 'inspection';
+    return;
+  }
+
+  if (task.includes('阅片')) {
+    stage.value = 'certificate';
+    distributionStep.value = 'reading';
     return;
   }
 
   stage.value = 'technician';
-  if (task.includes('阅片')) {
-    distributionStep.value = 'reading';
-  } else if (task.includes('分发') || task.includes('检查')) {
-    distributionStep.value = 'inspection';
-  } else if (task.includes('质量')) {
-    distributionStep.value = 'quality';
-  } else {
-    distributionStep.value = 'screening';
-  }
+  distributionStep.value = 'screening';
 }
 
 onMounted(async () => {
@@ -778,6 +674,12 @@ watch(
 .step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
 .step-btn.active { color: #2563eb; font-weight: 600; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
+.tech-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tech-card { border: 1px solid #d2dae6; border-radius: 8px; overflow: hidden; cursor: pointer; background: #fff; }
+.tech-card.active { border-color: #3f8fdb; box-shadow: 0 0 0 2px rgba(63,143,219,.15) inset; }
+.tech-thumb { height: 110px; background: #eef2f6; display: grid; place-items: center; font-size: 36px; color: #94a3b8; }
+.tech-meta { padding: 8px 10px; display: grid; gap: 2px; }
+.tech-meta small { color: #94a3b8; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
 .task-actions button:disabled { opacity: .5; cursor: not-allowed; }
@@ -846,9 +748,6 @@ watch(
 .msg-list li p { margin: 6px 0; }
 .msg-list li small { color: #64748b; }
 .empty { color: #64748b; }
-.task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
-.task-detail-panel dt { color: #64748b; }
-.task-detail-panel dd { margin: 0; }
 .image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
 .modal-mask {
   position: fixed;
