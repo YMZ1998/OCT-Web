@@ -56,6 +56,13 @@
         </button>
       </section>
 
+
+      <section v-if="stage === 'technician'" class="distribution-top-steps">
+        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">技师认证</button>
+        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">分发影像数据</button>
+        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片审核</button>
+      </section>
+
       <section class="main-grid">
         <div class="panel detail-panel">
           <template v-if="stage === 'hardware'">
@@ -79,25 +86,53 @@
           </template>
 
           <template v-else-if="stage === 'technician'">
-            <section class="task-header">
-              <p class="sub">影像任务</p>
-            </section>
-
-            <div class="tech-grid">
-              <article
-                class="tech-card"
-                v-for="item in pagedImages"
-                :key="item.id"
-                :class="{ active: activeTaskId === item.id }"
-                @click="showTaskDetail(item.id)"
-              >
-                <div class="tech-thumb">🖼️</div>
-                <div class="tech-meta">
-                  <strong>{{ item.sample }}</strong>
-                  <small>眼底照片</small>
+            <template v-if="distributionStep === 'inspection'">
+              <section class="task-header">
+                <p class="sub">任务列表</p>
+                <div class="task-actions">
+                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
+                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
                 </div>
-              </article>
-            </div>
+              </section>
+
+              <div class="task-list">
+                <article class="task-card" v-for="item in pagedImages" :key="item.id">
+                  <label>
+                    <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
+                    <div class="task-main">
+                      <strong>{{ item.sample }}</strong>
+                      <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
+                      <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
+                    </div>
+                  </label>
+                  <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
+                </article>
+              </div>
+
+              <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
+            </template>
+
+            <template v-else>
+              <section class="task-header">
+                <p class="sub">影像任务</p>
+              </section>
+
+              <div class="tech-grid">
+                <article
+                  class="tech-card"
+                  v-for="item in pagedImages"
+                  :key="item.id"
+                  :class="{ active: activeTaskId === item.id }"
+                  @click="showTaskDetail(item.id)"
+                >
+                  <div class="tech-thumb">🖼️</div>
+                  <div class="tech-meta">
+                    <strong>{{ item.sample }}</strong>
+                    <small>眼底照片</small>
+                  </div>
+                </article>
+              </div>
+            </template>
 
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
@@ -327,7 +362,11 @@ const stageLabel = computed(() => {
   return '硬件认证';
 });
 const pageTitle = computed(() => {
-  if (stage.value === 'technician') return '项目管理-技师认证';
+  if (stage.value === 'technician') {
+    if (distributionStep.value === 'inspection') return '项目管理-分发影像数据';
+    if (distributionStep.value === 'reading') return '项目管理-阅片审核';
+    return '项目管理-技师认证';
+  }
   return `项目管理-${stageLabel.value}`;
 });
 const opinionPlaceholder = computed(() => {
@@ -558,13 +597,13 @@ function syncStageByTaskQuery() {
   }
 
   if (task.includes('分发') || task.includes('检查')) {
-    stage.value = 'hardware';
+    stage.value = 'technician';
     distributionStep.value = 'inspection';
     return;
   }
 
   if (task.includes('阅片')) {
-    stage.value = 'certificate';
+    stage.value = 'technician';
     distributionStep.value = 'reading';
     return;
   }
