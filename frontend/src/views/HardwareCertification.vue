@@ -65,137 +65,39 @@
 
       <section class="main-grid">
         <div class="panel detail-panel">
-          <template v-if="stage === 'hardware'">
-            <h3>硬件认证详情</h3>
-            <p class="sub">设备信息</p>
-            <div class="detail-box">
-              <div><small>设备名称</small><strong>眼科光学相干断层扫描仪（OCT）</strong></div>
-              <div><small>设备型号</small><strong>OCT-SJTU-3000</strong></div>
-              <div><small>序列号</small><strong>SJTU-OCT-2026-0102</strong></div>
-              <div><small>制造商</small><strong>上海视研医疗科技</strong></div>
-            </div>
+          <HardwareStagePanel v-if="stage === 'hardware'" :docs="docs" />
 
-            <p class="sub">附件文档</p>
-            <div class="file-item" v-for="doc in docs" :key="doc.name">
-              <div>
-                <strong>{{ doc.name }}</strong>
-                <small>{{ doc.size }} · {{ doc.date }}</small>
-              </div>
-              <button>下载</button>
-            </div>
-          </template>
+          <TechnicianStagePanel
+            v-else-if="stage === 'technician'"
+            :distribution-step="distributionStep"
+            :selected-task-ids="selectedTaskIds"
+            :paged-images="pagedImages"
+            :distribution-message="distributionMessage"
+            :active-task-id="activeTaskId"
+            :current-page="currentPage"
+            :image-total-pages="imageTotalPages"
+            @distribute="distributeSelected"
+            @toggle-selection="toggleTaskSelection"
+            @show-task-detail="showTaskDetail"
+            @go-page="goToPage"
+          />
 
-          <template v-else-if="stage === 'technician'">
-            <template v-if="distributionStep === 'inspection'">
-              <section class="task-header">
-                <p class="sub">任务列表</p>
-                <div class="task-actions">
-                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
-                  <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
-                </div>
-              </section>
-
-              <div class="task-list">
-                <article class="task-card" v-for="item in pagedImages" :key="item.id">
-                  <label>
-                    <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
-                    <div class="task-main">
-                      <strong>{{ item.sample }}</strong>
-                      <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
-                      <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
-                    </div>
-                  </label>
-                  <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
-                </article>
-              </div>
-
-              <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
-            </template>
-
-            <template v-else>
-              <section class="task-header">
-                <p class="sub">影像任务</p>
-              </section>
-
-              <div class="tech-grid">
-                <article
-                  class="tech-card"
-                  v-for="item in pagedImages"
-                  :key="item.id"
-                  :class="{ active: activeTaskId === item.id }"
-                  @click="showTaskDetail(item.id)"
-                >
-                  <div class="tech-thumb">🖼️</div>
-                  <div class="tech-meta">
-                    <strong>{{ item.sample }}</strong>
-                    <small>眼底照片</small>
-                  </div>
-                </article>
-              </div>
-            </template>
-
-            <div class="pager" role="navigation" aria-label="影像分页">
-              <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
-              <button
-                v-for="page in imageTotalPages"
-                :key="page"
-                :class="['page-btn', page === currentPage ? 'active' : '']"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-              <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
-            </div>
-          </template>
-
-          <template v-else>
-            <h3>认证证书</h3>
-            <p class="sub">进入证书颁发界面后自动生成证书编号与二维码，可添加印章和电子签名</p>
-
-            <article class="certificate-card">
-              <header>
-                <h4>认证证书</h4>
-                <p>SJTURC眼科在线工作管理系统</p>
-              </header>
-              <section class="certificate-main">
-                <p>兹证明</p>
-                <h2>眼科影像分析系统</h2>
-                <small>项目ID: {{ projectId }}</small>
-                <p>已通过硬件认证和技师认证，符合SJTURC眼科系统认证标准。</p>
-              </section>
-              <section class="certificate-meta">
-                <div><span>颁证日期</span><strong>{{ issueDate }}</strong></div>
-                <div><span>有效期至</span><strong>{{ expiryDate }}</strong></div>
-                <div><span>证书编号</span><strong>{{ certificateNo }}</strong></div>
-              </section>
-              <section class="certificate-signature">
-                <div>
-                  <div class="qr-box">
-                    <span v-for="(cell, index) in qrCells" :key="index" :class="['qr-cell', cell ? 'on' : '']"></span>
-                  </div>
-                  <small>扫码验真</small>
-                </div>
-                <div class="signature-box">
-                  <div class="controls">
-                    <label><input type="checkbox" v-model="useSeal" /> 添加印章</label>
-                    <label><input type="checkbox" v-model="useSign" /> 添加电子签名</label>
-                  </div>
-                  <div class="marks">
-                    <span v-if="useSeal" class="seal">SJTURC印章</span>
-                    <span v-if="useSign" class="sign">授权签名</span>
-                  </div>
-                </div>
-              </section>
-            </article>
-
-            <div class="certificate-actions">
-              <button class="issue" :disabled="certificateIssued" @click="issueCertificate">{{ certificateIssued ? '已颁发' : '颁发证书' }}</button>
-              <div>
-                <button class="secondary" @click="printCertificate">打印证书</button>
-                <button class="secondary" @click="downloadCertificate">下载证书</button>
-              </div>
-            </div>
-          </template>
+          <CertificateStagePanel
+            v-else
+            :project-id="projectId"
+            :issue-date="issueDate"
+            :expiry-date="expiryDate"
+            :certificate-no="certificateNo"
+            :qr-cells="qrCells"
+            :use-seal="useSeal"
+            :use-sign="useSign"
+            :certificate-issued="certificateIssued"
+            @update:seal="updateUseSeal"
+            @update:sign="updateUseSign"
+            @issue="issueCertificate"
+            @print="printCertificate"
+            @download="downloadCertificate"
+          />
         </div>
 
         <div class="panel opinion-panel">
@@ -247,6 +149,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { getUser } from '../api/user';
+import CertificateStagePanel from '../components/hardware-certification/CertificateStagePanel.vue';
+import HardwareStagePanel from '../components/hardware-certification/HardwareStagePanel.vue';
+import TechnicianStagePanel from '../components/hardware-certification/TechnicianStagePanel.vue';
 import { useUserStore } from '../store/user';
 import type { User } from '../types/user';
 
@@ -424,6 +329,16 @@ function persistState() {
 
 function switchDistributionStep(nextStep: FlowState['distributionStep']) {
   distributionStep.value = nextStep;
+  persistState();
+}
+
+function updateUseSeal(next: boolean) {
+  useSeal.value = next;
+  persistState();
+}
+
+function updateUseSign(next: boolean) {
+  useSign.value = next;
   persistState();
 }
 
@@ -661,7 +576,7 @@ watch(
 );
 </script>
 
-<style scoped>
+<style>
 .cert-page { min-height: 100vh; display: flex; background: #eef2f6; color: #1f2937; }
 .sidebar { width: 250px; background: #3f8fdb; color: #fff; padding: 22px 16px; }
 .brand { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.25); padding-bottom: 14px; }
