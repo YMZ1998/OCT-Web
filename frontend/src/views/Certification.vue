@@ -245,14 +245,6 @@ const activeTaskProgress = computed(() => {
     ],
   };
 });
-const activeTaskReport = computed(() => {
-  const sample = activeTaskDetail.value?.sample || '当前任务';
-  return {
-    junior: `${sample} 黄斑区可见轻度水肿，建议结合随访观察。`,
-    seniorReport: `${sample} OCT影像层次清晰，黄斑中心凹结构基本完整，未见明显出血征象。`,
-    seniorOpinion: '建议纳入下一阶段随访，维持当前治疗方案并加强复查频率。',
-  };
-});
 
 const projectId = computed(() => String(route.query.projectId || 'XXXXXXXXXX'));
 const flowKey = computed(() => `oct-hardware-flow-${projectId.value}`);
