@@ -61,7 +61,7 @@
             <span>已完成 {{ item.done }}/{{ item.total }}</span>
             <span>{{ item.progress }}%</span>
           </div>
-          <div class="progress"><span :style="{ width: `${item.progress}%`, background: item.color }"></span></div>
+          <div class="task-progress"><span class="task-progress-fill" :style="{ width: `${item.progress}%`, backgroundColor: item.color }"></span></div>
         </div>
       </section>
 
@@ -157,7 +157,8 @@ const taskStats = computed(() => {
   const buildItem = (name: string, total: number, color: string, icon: string, keyword: string) => {
     const pending = countPending(keyword);
     const done = Math.max(total - pending, 0);
-    const progress = Math.round((done / total) * 100);
+    const rawProgress = total > 0 ? Math.round((done / total) * 100) : 0;
+    const progress = Math.max(0, Math.min(rawProgress, 100));
     const status = pending === 0 ? '已完成' : pending === total ? '待处理' : '进行中';
     const statusClass = pending === 0 ? 's-done' : pending === total ? 's-wait' : 's-doing';
     return { name, done, total, progress, color, status, statusClass, icon };
@@ -292,8 +293,8 @@ function onLogout() {
 .s-wait { background: #fef3c7; color: #b45309; }
 .s-doing { background: #dbeafe; color: #1d4ed8; }
 .s-urgent { background: #fee2e2; color: #b91c1c; }
-.progress { margin-top: 8px; height: 8px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
-.progress span { display: block; height: 100%; border-radius: inherit; }
+.task-progress { margin-top: 8px; height: 10px; border-radius: 999px; background: #e5e7eb; overflow: hidden; border: 1px solid #d1d5db; }
+.task-progress-fill { display: block; height: 100%; border-radius: inherit; min-width: 2px; transition: width 0.2s ease; }
 .dist-panel { margin-top: 10px; background: #fff; border: 1px solid #d5dbe5; border-radius: 8px; min-height: 180px; display: flex; align-items: center; justify-content: space-around; }
 .donut { width: 160px; height: 160px; border-radius: 50%; background: conic-gradient(#16a34a 0 30%, #f59e0b 30% 42%, #0284c7 42% 58%, #7c3aed 58% 76%, #4f46e5 76% 90%, #ef4444 90% 100%); position: relative; }
 .donut::after { content: ''; position: absolute; inset: 30px; border-radius: 50%; background: #fff; }
