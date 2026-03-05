@@ -305,7 +305,18 @@ function openDetailModal(project: ProjectItem) {
 }
 
 function openCertification(item: TodoItem) {
-  router.push(`/projects/${route.params.id}/hardware?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
+  const task = item.taskName.trim();
+  if (task === '认证') {
+    router.push(`/projects/${route.params.id}/hardware?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
+    return;
+  }
+
+  if (task === '分发影像数据') {
+    router.push(`/projects/${route.params.id}/distribution?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
+    return;
+  }
+
+  router.push(`/projects/${route.params.id}/review?projectId=${item.projectId}&task=${encodeURIComponent(item.taskName)}`);
 }
 
 onMounted(async () => {
