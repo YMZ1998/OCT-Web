@@ -41,7 +41,7 @@
         </div>
       </header>
 
-      <section class="tabs" v-if="stage !== 'technician'">
+      <section class="tabs">
         <button :class="tabClass('hardware')" @click="switchStage('hardware')">
           <span class="tab-icon">🧩</span>
           <span>硬件认证</span>
@@ -56,7 +56,7 @@
         </button>
       </section>
 
-      <section v-else class="distribution-top-steps">
+      <section v-if="stage === 'technician'" class="distribution-top-steps">
         <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
         <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
         <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
