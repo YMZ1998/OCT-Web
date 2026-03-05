@@ -41,7 +41,7 @@
         </div>
       </header>
 
-      <section class="tabs" v-if="stage !== 'technician'">
+      <section class="tabs">
         <button :class="tabClass('hardware')" @click="switchStage('hardware')">
           <span class="tab-icon">🧩</span>
           <span>硬件认证</span>
@@ -54,13 +54,6 @@
           <span class="tab-icon">🏅</span>
           <span>证书颁发</span>
         </button>
-      </section>
-
-      <section v-else class="distribution-top-steps">
-        <button :class="['step-btn', distributionStep === 'screening' ? 'active' : '']" @click="switchDistributionStep('screening')">受试者筛选阶段</button>
-        <button :class="['step-btn', distributionStep === 'inspection' ? 'active' : '']" @click="switchDistributionStep('inspection')">影像数据检查阶段</button>
-        <button :class="['step-btn', distributionStep === 'reading' ? 'active' : '']" @click="switchDistributionStep('reading')">阅片阶段</button>
-        <button :class="['step-btn', distributionStep === 'quality' ? 'active' : '']" @click="switchDistributionStep('quality')">质量抽查</button>
       </section>
 
       <section class="main-grid">
@@ -85,30 +78,26 @@
             </div>
           </template>
 
-          <template v-else-if="stage === 'technician' && distributionStep === 'inspection'">
+          <template v-else-if="stage === 'technician'">
             <section class="task-header">
-              <p class="sub">任务列表</p>
-              <div class="task-actions">
-                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('batch')">批量分发</button>
-                <button :disabled="!selectedTaskIds.length" @click="distributeSelected('smart')">智能分发</button>
-              </div>
+              <p class="sub">影像任务</p>
             </section>
 
-            <div class="task-list">
-              <article class="task-card" v-for="item in pagedImages" :key="item.id">
-                <label>
-                  <input type="checkbox" :checked="selectedTaskIds.includes(item.id)" @change="toggleTaskSelection(item.id)" />
-                  <div class="task-main">
-                    <strong>{{ item.sample }}</strong>
-                    <small>患者：{{ item.patient }}｜年龄：{{ item.age }}岁｜检查类型：{{ item.type }}</small>
-                    <small>{{ item.date }} · {{ item.imageCount }}张影像</small>
-                  </div>
-                </label>
-                <button class="detail-link" @click="showTaskDetail(item.id)">查看详情</button>
+            <div class="tech-grid">
+              <article
+                class="tech-card"
+                v-for="item in pagedImages"
+                :key="item.id"
+                :class="{ active: activeTaskId === item.id }"
+                @click="showTaskDetail(item.id)"
+              >
+                <div class="tech-thumb">🖼️</div>
+                <div class="tech-meta">
+                  <strong>{{ item.sample }}</strong>
+                  <small>眼底照片</small>
+                </div>
               </article>
             </div>
-
-            <p v-if="distributionMessage" class="distribution-message">{{ distributionMessage }}</p>
 
             <div class="pager" role="navigation" aria-label="影像分页">
               <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
@@ -121,16 +110,6 @@
                 {{ page }}
               </button>
               <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
-            </div>
-          </template>
-
-          <template v-else-if="stage === 'technician'">
-            <h3>影像分发</h3>
-            <p class="sub">当前阶段：{{ distributionStepLabel }}</p>
-            <div class="stage-placeholder">
-              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，可在顶部自由切换到“影像数据检查阶段”。</p>
-              <p v-else-if="distributionStep === 'reading'">当前为阅片阶段，影像将进入医生阅片审核流程。</p>
-              <p v-else>当前为质量抽查阶段，可对已分发影像进行质量追踪。</p>
             </div>
           </template>
 
@@ -184,7 +163,7 @@
           </template>
         </div>
 
-        <div class="panel opinion-panel" v-if="stage !== 'technician'">
+        <div class="panel opinion-panel">
           <h3>审核意见</h3>
           <textarea v-model.trim="opinion" :placeholder="opinionPlaceholder"></textarea>
 
@@ -212,25 +191,8 @@
             <p v-if="!messages.length" class="empty">暂无通知记录</p>
           </div>
         </div>
-
-        <div class="panel task-detail-panel" v-else>
-          <h3>任务详情</h3>
-          <template v-if="distributionStep === 'inspection' && activeTaskDetail">
-            <dl>
-              <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
-              <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
-              <dt>年龄</dt><dd>{{ activeTaskDetail.age }} 岁</dd>
-              <dt>检查类型</dt><dd>{{ activeTaskDetail.type }}</dd>
-              <dt>采集时间</dt><dd>{{ activeTaskDetail.date }}</dd>
-              <dt>影像数量</dt><dd>{{ activeTaskDetail.imageCount }} 张</dd>
-            </dl>
-            <button class="notify" @click="viewFullImage">查看完整影像</button>
-          </template>
-          <p v-else-if="distributionStep !== 'inspection'" class="empty">请先进入“影像数据检查阶段”，再查看任务详情。</p>
-          <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
-          <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
-        </div>
       </section>
+
     </main>
 
     <div v-if="showImagePreview && activeTaskDetail" class="modal-mask" @click.self="showImagePreview = false">
@@ -289,6 +251,8 @@ const user = ref<User | null>(null);
 
 const opinion = ref('');
 const formMessage = ref('');
+const managerOpinion = ref('');
+const showFullReport = ref(false);
 const stage = ref<FlowState['stage']>('technician');
 const messages = ref<ReviewMessage[]>([]);
 const lastDecision = ref('');
@@ -333,6 +297,27 @@ const pagedImages = computed(() => {
   return imageData.slice(start, start + pageSize);
 });
 const activeTaskDetail = computed(() => imageData.find((item) => item.id === activeTaskId.value) || null);
+const activeTaskProgress = computed(() => {
+  const id = activeTaskDetail.value?.id || 0;
+  const percent = 65 + (id % 30);
+  return {
+    percent,
+    flow: [
+      { label: '任务创建', time: '2026-02-10 09:15' },
+      { label: '初级读片完成', time: '2026-02-10 11:20' },
+      { label: '主管读片完成', time: '2026-02-10 14:35' },
+      { label: '项目经理审核中', time: '待处理' },
+    ],
+  };
+});
+const activeTaskReport = computed(() => {
+  const sample = activeTaskDetail.value?.sample || '当前任务';
+  return {
+    junior: `${sample} 黄斑区可见轻度水肿，建议结合随访观察。`,
+    seniorReport: `${sample} OCT影像层次清晰，黄斑中心凹结构基本完整，未见明显出血征象。`,
+    seniorOpinion: '建议纳入下一阶段随访，维持当前治疗方案并加强复查频率。',
+  };
+});
 
 const projectId = computed(() => String(route.query.projectId || 'XXXXXXXXXX'));
 const flowKey = computed(() => `oct-hardware-flow-${projectId.value}`);
@@ -342,14 +327,8 @@ const stageLabel = computed(() => {
   return '硬件认证';
 });
 const pageTitle = computed(() => {
-  if (stage.value === 'technician') return '项目管理-分发影像数据';
+  if (stage.value === 'technician') return '项目管理-技师认证';
   return `项目管理-${stageLabel.value}`;
-});
-const distributionStepLabel = computed(() => {
-  if (distributionStep.value === 'inspection') return '影像数据检查阶段';
-  if (distributionStep.value === 'reading') return '阅片阶段';
-  if (distributionStep.value === 'quality') return '质量抽查';
-  return '受试者筛选阶段';
 });
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
@@ -406,11 +385,6 @@ function persistState() {
 
 function switchDistributionStep(nextStep: FlowState['distributionStep']) {
   distributionStep.value = nextStep;
-  if (nextStep !== 'inspection') {
-    selectedTaskIds.value = [];
-    activeTaskId.value = null;
-    distributionMessage.value = '';
-  }
   persistState();
 }
 
@@ -430,14 +404,21 @@ function toggleTaskSelection(id: number) {
 
 function showTaskDetail(id: number) {
   activeTaskId.value = id;
+  showFullReport.value = false;
+  formMessage.value = '';
+}
+
+function viewFullReport(id?: number) {
+  if (id) activeTaskId.value = id;
+  if (!activeTaskDetail.value) {
+    formMessage.value = '请先选择任务。';
+    return;
+  }
+  showFullReport.value = true;
   formMessage.value = '';
 }
 
 function distributeSelected(mode: 'batch' | 'smart') {
-  if (distributionStep.value !== 'inspection') {
-    distributionMessage.value = '请先进入影像数据检查阶段。';
-    return;
-  }
   if (!selectedTaskIds.value.length) return;
   distributionMessage.value = mode === 'batch'
     ? `已将 ${selectedTaskIds.value.length} 份影像资料批量分发给指定医生。`
@@ -446,16 +427,27 @@ function distributeSelected(mode: 'batch' | 'smart') {
 }
 
 function viewFullImage() {
-  if (distributionStep.value !== 'inspection') {
-    formMessage.value = '请先进入影像数据检查阶段。';
-    return;
-  }
   if (!activeTaskDetail.value) {
     formMessage.value = '请先选择任务并查看详情。';
     return;
   }
   formMessage.value = `已打开 ${activeTaskDetail.value.sample} 的完整影像。`;
   showImagePreview.value = true;
+}
+
+function submitReadingDecision(pass: boolean) {
+  if (!activeTaskDetail.value) {
+    formMessage.value = '请先选择任务后再提交审核结论。';
+    return;
+  }
+  if (!managerOpinion.value) {
+    formMessage.value = '请先填写报告意见。';
+    return;
+  }
+  const prefix = pass ? '通过' : '不通过';
+  const content = `【阅片审核${prefix}】${activeTaskDetail.value.sample}：${managerOpinion.value}`;
+  sendToTechnicianAccount(pass ? '通过' : '不通过', content);
+  formMessage.value = `已提交${prefix}结论并通知试验中心。`;
 }
 
 function switchStage(nextStage: FlowState['stage']) {
@@ -553,6 +545,32 @@ function sendNotification() {
   formMessage.value = '';
   const content = opinion.value || '请关注当前硬件认证任务并及时处理。';
   sendToTechnicianAccount('通知', content);
+}
+
+function syncStageByTaskQuery() {
+  const task = String(route.query.task || '');
+  if (!task) return;
+
+  if (task.includes('认证')) {
+    stage.value = 'technician';
+    distributionStep.value = 'screening';
+    return;
+  }
+
+  if (task.includes('分发') || task.includes('检查')) {
+    stage.value = 'hardware';
+    distributionStep.value = 'inspection';
+    return;
+  }
+
+  if (task.includes('阅片')) {
+    stage.value = 'certificate';
+    distributionStep.value = 'reading';
+    return;
+  }
+
+  stage.value = 'technician';
+  distributionStep.value = 'screening';
 }
 
 onMounted(async () => {
@@ -656,6 +674,12 @@ watch(
 .step-btn { border: none; background: transparent; color: #475569; font: inherit; cursor: pointer; padding: 0; }
 .step-btn.active { color: #2563eb; font-weight: 600; }
 .task-header { display: flex; justify-content: space-between; align-items: center; }
+.tech-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tech-card { border: 1px solid #d2dae6; border-radius: 8px; overflow: hidden; cursor: pointer; background: #fff; }
+.tech-card.active { border-color: #3f8fdb; box-shadow: 0 0 0 2px rgba(63,143,219,.15) inset; }
+.tech-thumb { height: 110px; background: #eef2f6; display: grid; place-items: center; font-size: 36px; color: #94a3b8; }
+.tech-meta { padding: 8px 10px; display: grid; gap: 2px; }
+.tech-meta small { color: #94a3b8; }
 .task-actions { display: flex; gap: 10px; }
 .task-actions button { border: 1px solid #c8d7ff; background: #e8f0ff; color: #1f3b8f; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
 .task-actions button:disabled { opacity: .5; cursor: not-allowed; }
@@ -712,10 +736,6 @@ watch(
 .msg-list li p { margin: 6px 0; }
 .msg-list li small { color: #64748b; }
 .empty { color: #64748b; }
-.task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
-.task-detail-panel dt { color: #64748b; }
-.task-detail-panel dd { margin: 0; }
-.stage-placeholder { border: 1px dashed #d2dae6; border-radius: 8px; padding: 14px; color: #334155; display: grid; gap: 10px; }
 .image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
 .modal-mask {
   position: fixed;
