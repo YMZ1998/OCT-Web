@@ -85,7 +85,7 @@
             </div>
           </template>
 
-          <template v-else-if="stage === 'technician' && ['screening', 'inspection'].includes(distributionStep)">
+          <template v-else-if="stage === 'technician'">
             <section class="task-header">
               <p class="sub">任务列表</p>
               <div class="task-actions">
@@ -121,16 +121,6 @@
                 {{ page }}
               </button>
               <button :disabled="currentPage === imageTotalPages" @click="goToPage(currentPage + 1)">›</button>
-            </div>
-          </template>
-
-          <template v-else-if="stage === 'technician'">
-            <h3>影像分发</h3>
-            <p class="sub">当前阶段：{{ distributionStepLabel }}</p>
-            <div class="stage-placeholder">
-              <p v-if="distributionStep === 'screening'">已进入受试者筛选阶段，可在顶部自由切换到“影像数据检查阶段”。</p>
-              <p v-else-if="distributionStep === 'reading'">当前为阅片阶段，影像将进入医生阅片审核流程。</p>
-              <p v-else>当前为质量抽查阶段，可对已分发影像进行质量追踪。</p>
             </div>
           </template>
 
@@ -215,7 +205,7 @@
 
         <div class="panel task-detail-panel" v-else>
           <h3>任务详情</h3>
-          <template v-if="['screening', 'inspection'].includes(distributionStep) && activeTaskDetail">
+          <template v-if="activeTaskDetail">
             <dl>
               <dt>病例</dt><dd>{{ activeTaskDetail.sample }}</dd>
               <dt>患者</dt><dd>{{ activeTaskDetail.patient }}</dd>
@@ -226,7 +216,6 @@
             </dl>
             <button class="notify" @click="viewFullImage">查看完整影像</button>
           </template>
-          <p v-else-if="!['screening', 'inspection'].includes(distributionStep)" class="empty">请先进入“受试者筛选阶段”或“影像数据检查阶段”，再查看任务详情。</p>
           <p v-else class="empty">点击“查看详情”后可在此查看任务详情。</p>
           <p v-if="formMessage" class="form-message">{{ formMessage }}</p>
         </div>
@@ -345,12 +334,6 @@ const pageTitle = computed(() => {
   if (stage.value === 'technician') return '项目管理-分发影像数据';
   return `项目管理-${stageLabel.value}`;
 });
-const distributionStepLabel = computed(() => {
-  if (distributionStep.value === 'inspection') return '影像数据检查阶段';
-  if (distributionStep.value === 'reading') return '阅片阶段';
-  if (distributionStep.value === 'quality') return '质量抽查';
-  return '受试者筛选阶段';
-});
 const opinionPlaceholder = computed(() => {
   if (stage.value === 'technician') return '医生在查看影像数据后请输入审核意见';
   if (stage.value === 'hardware') return '医生在查看硬件详情后请输入审核意见';
@@ -406,11 +389,6 @@ function persistState() {
 
 function switchDistributionStep(nextStep: FlowState['distributionStep']) {
   distributionStep.value = nextStep;
-  if (nextStep !== 'inspection') {
-    selectedTaskIds.value = [];
-    activeTaskId.value = null;
-    distributionMessage.value = '';
-  }
   persistState();
 }
 
@@ -434,10 +412,6 @@ function showTaskDetail(id: number) {
 }
 
 function distributeSelected(mode: 'batch' | 'smart') {
-  if (!['screening', 'inspection'].includes(distributionStep.value)) {
-    distributionMessage.value = '请先进入受试者筛选阶段或影像数据检查阶段。';
-    return;
-  }
   if (!selectedTaskIds.value.length) return;
   distributionMessage.value = mode === 'batch'
     ? `已将 ${selectedTaskIds.value.length} 份影像资料批量分发给指定医生。`
@@ -446,10 +420,6 @@ function distributeSelected(mode: 'batch' | 'smart') {
 }
 
 function viewFullImage() {
-  if (!['screening', 'inspection'].includes(distributionStep.value)) {
-    formMessage.value = '请先进入受试者筛选阶段或影像数据检查阶段。';
-    return;
-  }
   if (!activeTaskDetail.value) {
     formMessage.value = '请先选择任务并查看详情。';
     return;
@@ -715,7 +685,6 @@ watch(
 .task-detail-panel dl { display: grid; grid-template-columns: 70px 1fr; gap: 8px; margin: 0; }
 .task-detail-panel dt { color: #64748b; }
 .task-detail-panel dd { margin: 0; }
-.stage-placeholder { border: 1px dashed #d2dae6; border-radius: 8px; padding: 14px; color: #334155; display: grid; gap: 10px; }
 .image-preview { height: 280px; border: 1px solid #d2dae6; border-radius: 8px; background: linear-gradient(135deg, #f8fbff, #e6eefb); display: grid; place-items: center; color: #1e3a8a; font-size: 22px; }
 .modal-mask {
   position: fixed;
